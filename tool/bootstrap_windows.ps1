@@ -1,37 +1,27 @@
 $ErrorActionPreference = 'Stop'
 
-if (-not (Test-Path 'windows')) {
-    flutter config --enable-windows-desktop
+$requiredFiles = @(
+    'windows/CMakeLists.txt',
+    'windows/runner/CMakeLists.txt',
+    'windows/runner/main.cpp',
+    'windows/runner/Runner.rc',
+    'windows/runner/resources/app_icon.ico'
+)
 
-    $temporaryProject = Join-Path ([System.IO.Path]::GetTempPath()) (
-        'airmonlink-business-manager-windows-' + [System.Guid]::NewGuid().ToString('N')
-    )
-
-    try {
-        flutter create `
-            --platforms=windows `
-            --org com.airmonlink `
-            --project-name airmonlink_business_manager `
-            $temporaryProject
-
-        Copy-Item `
-            -Path (Join-Path $temporaryProject 'windows') `
-            -Destination 'windows' `
-            -Recurse
-    }
-    finally {
-        if (Test-Path $temporaryProject) {
-            Remove-Item $temporaryProject -Recurse -Force
-        }
+foreach ($path in $requiredFiles) {
+    if (-not (Test-Path $path)) {
+        throw "Required Windows source file is missing: $path"
     }
 }
 
-$mainCpp = 'windows/runner/main.cpp'
-if (Test-Path $mainCpp) {
-    $content = Get-Content $mainCpp -Raw
-    $content = $content.Replace(
-        'L"airmonlink_business_manager"',
-        'L"Airmonlink Business Manager"'
-    )
-    Set-Content $mainCpp $content -NoNewline
+$mainCpp = Get-Content 'windows/runner/main.cpp' -Raw
+if ($mainCpp -notmatch 'L"Airmonlink Business Manager"') {
+    throw 'The Windows window title does not match Airmonlink Business Manager.'
 }
+
+$cmake = Get-Content 'windows/CMakeLists.txt' -Raw
+if ($cmake -notmatch 'set\(BINARY_NAME\s+"airmonlink_business_manager"\)') {
+    throw 'The Windows executable identity is not airmonlink_business_manager.'
+}
+
+Write-Host 'Existing Windows platform source verified. No template files were generated.'
