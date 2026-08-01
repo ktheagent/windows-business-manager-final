@@ -194,6 +194,7 @@ class CommercialService {
     required String username,
     required String pin,
     required StaffRole role,
+    bool forcePinChange = true,
   }) async {
     _require(actor, CommercialPermission.staffManage);
     final db = await _database.database;

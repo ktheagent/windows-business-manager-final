@@ -964,7 +964,7 @@ class _ReportsPanelState extends State<_ReportsPanel> {
           title: '${kind.label} report',
           fileName: '${kind.name}-report.pdf',
           initialPageFormat: PdfPageFormat.a4.landscape,
-          pageFormats: const {'A4 landscape': PdfPageFormat.a4.landscape},
+          pageFormats: {'A4 landscape': PdfPageFormat.a4.landscape},
           buildPdf: (_) => widget.state.advancedReports.buildPdf(
             result: result,
             businessName: widget.state.businessName,

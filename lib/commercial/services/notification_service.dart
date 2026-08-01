@@ -296,18 +296,16 @@ class NotificationService {
     for (var attempt = 1; attempt <= retries + 1; attempt++) {
       try {
         await send(message, server);
-        const sent = true;
         await _log(
           channel: 'email',
           recipient: recipient.trim(),
           documentType: documentType,
           documentId: documentId,
-          status: sent ? 'sent' : 'failed',
-          providerStatus: sent ? 'accepted' : 'empty_response',
+          status: 'sent',
+          providerStatus: 'accepted',
           attempts: attempt,
-          error: sent ? '' : 'SMTP server returned no delivery result.',
+          error: '',
         );
-        if (!sent) throw StateError('Email was not accepted by the server.');
         return;
       } catch (error) {
         lastError = error;
