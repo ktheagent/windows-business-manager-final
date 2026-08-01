@@ -1,0 +1,97 @@
+name: Diagnose Build 8 Flutter Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'test/**'
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/test-diagnostics.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build8-test-diagnostics-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose-tests:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.5'
+          channel: stable
+          cache: true
+
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Run complete test suite
+        id: full_suite
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          flutter test --reporter expanded 2>&1 | Tee-Object flutter-test-report.txt
+          "exit_code=$LASTEXITCODE" >> $env:GITHUB_OUTPUT
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::warning title=Full Flutter suite failed::Running each test file separately to identify every failing file."
+          }
+
+      - name: Diagnose every failing test file
+        if: steps.full_suite.outputs.exit_code != '0'
+        shell: pwsh
+        run: |
+          $failed = @()
+          $testFiles = Get-ChildItem test -Filter '*_test.dart' | Sort-Object FullName
+
+          foreach ($testFile in $testFiles) {
+            $relative = $testFile.FullName.Substring((Get-Location).Path.Length + 1).Replace('\', '/')
+            $log = Join-Path $env:RUNNER_TEMP ($testFile.BaseName + '.log')
+
+            Write-Host "===== $relative ====="
+            flutter test $relative --reporter expanded 2>&1 | Tee-Object $log
+            $exitCode = $LASTEXITCODE
+
+            if ($exitCode -ne 0) {
+              $failed += $relative
+              $tail = (Get-Content $log | Select-Object -Last 80) -join "`n"
+              $tail = $tail.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+              Write-Host "::error file=$relative,title=Flutter test failure::$tail"
+            }
+          }
+
+          "## Build 8 Flutter test diagnosis" | Add-Content $env:GITHUB_STEP_SUMMARY
+          if ($failed.Count -eq 0) {
+            "The complete suite failed, but every file passed alone. This indicates cross-file global-state leakage or order dependence." |
+              Add-Content $env:GITHUB_STEP_SUMMARY
+            throw "Full-suite-only failure: all individual files passed."
+          }
+
+          "Failing files:" | Add-Content $env:GITHUB_STEP_SUMMARY
+          foreach ($file in $failed) {
+            "- ``$file``" | Add-Content $env:GITHUB_STEP_SUMMARY
+          }
+          throw "Flutter tests failed in: $($failed -join ', ')"
+
+      - name: Fail when complete suite failed
+        if: steps.full_suite.outputs.exit_code != '0' && always()
+        shell: pwsh
+        run: |
+          throw "The complete Flutter test suite failed. See annotations and flutter-test-report.txt."
+
+      - name: Upload complete test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Airmonlink-Build8-Test-Diagnostics
+          path: flutter-test-report.txt
+          if-no-files-found: warn
+          retention-days: 30
