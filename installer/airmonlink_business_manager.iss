@@ -1,0 +1,48 @@
+#define MyAppName "Airmonlink Business Manager"
+#define MyAppVersion "1.3.0"
+#define MyAppBuild "8"
+#define MyAppPublisher "Airmonlink"
+#define MyAppExeName "airmonlink_business_manager.exe"
+#define MyAppId "{{8B018058-1F0E-4DCF-8CB8-E3DC08714E4F}"
+
+[Setup]
+AppId={#MyAppId}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion} Build {#MyAppBuild}
+AppPublisher={#MyAppPublisher}
+VersionInfoVersion=1.3.0.8
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion={#MyAppVersion} Build {#MyAppBuild}
+DefaultDirName={localappdata}\Programs\Airmonlink Business Manager
+DefaultGroupName={#MyAppName}
+DisableProgramGroupPage=yes
+OutputDir=..\dist
+OutputBaseFilename=Airmonlink-Business-Manager-1.3.0-Build8-Setup
+Compression=lzma2
+SolidCompression=yes
+WizardStyle=modern
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+PrivilegesRequired=lowest
+LicenseFile=..\installer\Airmonlink-Business-Manager-EULA.rtf
+UninstallDisplayIcon={app}\{#MyAppExeName}
+CloseApplications=yes
+RestartApplications=no
+SetupLogging=yes
+UsePreviousAppDir=yes
+UsePreviousGroup=yes
+UsePreviousTasks=yes
+
+[Files]
+Source: "..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0; Tasks: desktopicon
+
+[Tasks]
+Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"; Flags: unchecked
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
