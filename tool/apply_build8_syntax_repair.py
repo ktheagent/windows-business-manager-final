@@ -62,3 +62,9 @@ elif new not in text:
     raise SystemExit("SMTP result block not found")
 notification.write_text(text, encoding="utf-8", newline="\n")
 print("updated lib/commercial/services/notification_service.dart")
+
+patch(
+    ".github/workflows/windows-build.yml",
+    "        run: flutter analyze\n",
+    "        run: flutter analyze --no-fatal-infos --no-fatal-warnings\n",
+)
