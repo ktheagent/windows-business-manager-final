@@ -14,15 +14,13 @@ class LicenseService {
     LicenseStorage? storage,
     LicenseApiClient? apiClient,
     DeviceIdentityService? deviceIdentityService,
-    PackageInfo? packageInfo,
-    String? appVersion,
+    this._packageInfo,
+    this._appVersion,
     DateTime Function()? now,
   }) : _storage = storage ?? LicenseStorage(),
        _apiClient = apiClient ?? LicenseApiClient(),
        _deviceIdentityService =
            deviceIdentityService ?? DeviceIdentityService(),
-       _packageInfo = packageInfo,
-       _appVersion = appVersion,
        _now = now ?? DateTime.now;
 
   final LicenseStorage _storage;

@@ -544,8 +544,9 @@ class CommercialDocumentService {
         );
       }
     }
-    if (widgets.isEmpty)
+    if (widgets.isEmpty) {
       throw StateError('Selected products do not have barcodes.');
+    }
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,

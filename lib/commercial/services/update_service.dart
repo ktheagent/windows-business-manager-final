@@ -110,11 +110,9 @@ class UpdateService {
   UpdateService(
     this._database, {
     http.Client? client,
-    PackageInfo? packageInfo,
-    String trustedPublicKeyBase64 = ReleaseSigningKey.ed25519PublicKeyBase64,
-  }) : _client = client ?? http.Client(),
-       _packageInfo = packageInfo,
-       _trustedPublicKeyBase64 = trustedPublicKeyBase64;
+    this._packageInfo,
+    this._trustedPublicKeyBase64 = ReleaseSigningKey.ed25519PublicKeyBase64,
+  }) : _client = client ?? http.Client();
 
   final DatabaseService _database;
   final http.Client _client;

@@ -23,11 +23,10 @@ class LicenseApiClient {
   LicenseApiClient({
     http.Client? client,
     String? baseUrl,
-    Duration timeout = const Duration(seconds: 20),
+    this._timeout = const Duration(seconds: 20),
   }) : _client = client ?? http.Client(),
        _baseUrl = (baseUrl ?? 'https://license.airmonlink.com/api/v1')
-           .replaceFirst(RegExp(r'/+$'), ''),
-       _timeout = timeout;
+           .replaceFirst(RegExp(r'/+$'), '');
 
   final http.Client _client;
   final String _baseUrl;

@@ -40,8 +40,9 @@ class ImportService {
     final file = File(path);
     if (!await file.exists()) throw StateError('Import file was not found.');
     final rows = await _readRows(file);
-    if (rows.length < 2)
+    if (rows.length < 2) {
       throw StateError('The import file contains no data rows.');
+    }
     final headers = rows.first
         .map((value) => value.trim().toLowerCase().replaceAll(' ', '_'))
         .toList();
@@ -198,8 +199,9 @@ class ImportService {
         row.add(field.toString());
         field.clear();
       } else if ((char == '\n' || char == '\r') && !quoted) {
-        if (char == '\r' && i + 1 < content.length && content[i + 1] == '\n')
+        if (char == '\r' && i + 1 < content.length && content[i + 1] == '\n') {
           i++;
+        }
         row.add(field.toString());
         field.clear();
         rows.add(row);

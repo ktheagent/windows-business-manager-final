@@ -26,6 +26,7 @@ dependencies:
   sqflite_common_ffi: 2.4.2
   url_launcher: ^6.3.0
 
+  sqflite_common: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

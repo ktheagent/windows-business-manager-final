@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 
 import '../../core/formatters.dart';
-import '../../models/product.dart';
 import '../../state/app_state.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/page_header.dart';
@@ -291,8 +290,9 @@ class _HealthPanel extends StatelessWidget {
         consolidated:
             user.role == StaffRole.owner || user.role == StaffRole.manager,
       );
-      if (context.mounted)
+      if (context.mounted) {
         showSuccess(context, 'Profit report exported: $path');
+      }
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -350,7 +350,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
               }
               return ListView.separated(
                 itemCount: snapshot.data!.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
                   final document = snapshot.data![index];
                   final id = document['id'] as int;
@@ -558,7 +558,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
               : ListView.separated(
                   shrinkWrap: true,
                   itemCount: history.length,
-                  separatorBuilder: (_, __) => const Divider(),
+                  separatorBuilder: (_, _) => const Divider(),
                   itemBuilder: (_, index) {
                     final row = history[index];
                     return ListTile(
@@ -1365,8 +1365,9 @@ class _CustomerDebtPanelState extends State<_CustomerDebtPanel> {
     if (accepted != true) return;
     final parsed = double.tryParse(amount.text.trim());
     if (parsed == null || parsed <= 0) {
-      if (context.mounted)
+      if (context.mounted) {
         showFailure(context, 'Enter a valid payment amount.');
+      }
       return;
     }
     try {
@@ -1450,8 +1451,9 @@ class _PurchasingPanelState extends State<_PurchasingPanel> {
           future: future,
           builder: (context, snapshot) {
             if (snapshot.hasError) return _ErrorCard(snapshot.error!);
-            if (!snapshot.hasData)
+            if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
+            }
             if (snapshot.data!.isEmpty) {
               return const _EmptyState(
                 icon: Icons.shopping_cart_outlined,
@@ -1686,11 +1688,12 @@ class _InventoryPanel extends StatelessWidget {
       }
       await state.commercial.approveStockCount(actor: user, stockCountId: id);
       await state.refreshAll();
-      if (context.mounted)
+      if (context.mounted) {
         showSuccess(
           context,
           'Stock count created and approved with current quantities.',
         );
+      }
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -1784,8 +1787,9 @@ class _CashReturnsPanelState extends State<_CashReturnsPanel> {
       final registers = await widget.state.commercial.listCashRegisters(
         widget.user,
       );
-      if (registers.isEmpty)
+      if (registers.isEmpty) {
         throw StateError('No cash register is configured.');
+      }
       await widget.state.commercial.openCashSession(
         actor: widget.user,
         registerId: registers.first['id'] as int,
@@ -1809,11 +1813,12 @@ class _CashReturnsPanelState extends State<_CashReturnsPanel> {
         note: '',
       );
       await widget.state.refreshAll();
-      if (mounted)
+      if (mounted) {
         showSuccess(
           context,
           'Shift closed. Variance: ${AppFormatters.money(result['variance']!)}',
         );
+      }
     } catch (error) {
       if (mounted) showFailure(context, error);
     }
@@ -2045,8 +2050,9 @@ class _StaffBranchesPanel extends StatelessWidget {
           future: state.commercial.listStaff(user),
           builder: (context, snapshot) {
             if (snapshot.hasError) return _ErrorCard(snapshot.error!);
-            if (!snapshot.hasData)
+            if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
+            }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -2944,8 +2950,9 @@ class _PremiumToolsPanel extends StatelessWidget {
     if (password == null || password.isEmpty) return;
     try {
       final path = await state.createEncryptedBackup(password);
-      if (context.mounted)
+      if (context.mounted) {
         showSuccess(context, 'Encrypted backup created: $path');
+      }
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -3038,8 +3045,9 @@ class _PremiumToolsPanel extends StatelessWidget {
         username: username,
         password: password,
       );
-      if (context.mounted)
+      if (context.mounted) {
         showSuccess(context, 'Encrypted cloud backup uploaded.');
+      }
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -3075,8 +3083,9 @@ class _PremiumToolsPanel extends StatelessWidget {
   Future<void> _remote(BuildContext context) async {
     try {
       final url = await state.startRemoteDashboard();
-      if (context.mounted)
+      if (context.mounted) {
         showSuccess(context, 'Remote dashboard started at $url');
+      }
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -3087,13 +3096,14 @@ class _PremiumToolsPanel extends StatelessWidget {
     if (text == null || text.isEmpty) return;
     try {
       final info = await state.updates.check(Uri.parse(text));
-      if (context.mounted)
+      if (context.mounted) {
         showSuccess(
           context,
           info.isNewer
               ? 'Update ${info.availableVersion} is available.'
               : 'This installation is up to date.',
         );
+      }
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -3129,13 +3139,15 @@ class _AuditPanel extends StatelessWidget {
     future: state.commercial.listAudit(actor: user),
     builder: (context, snapshot) {
       if (snapshot.hasError) return _ErrorCard(snapshot.error!);
-      if (!snapshot.hasData)
+      if (!snapshot.hasData) {
         return const Center(child: CircularProgressIndicator());
-      if (snapshot.data!.isEmpty)
+      }
+      if (snapshot.data!.isEmpty) {
         return const _EmptyState(
           icon: Icons.manage_search_outlined,
           message: 'No audit entries yet.',
         );
+      }
       return ListView.builder(
         itemCount: snapshot.data!.length,
         itemBuilder: (context, index) {

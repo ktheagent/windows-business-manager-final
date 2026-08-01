@@ -5,16 +5,12 @@ import 'package:sqflite_common/utils/utils.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../core/money.dart';
-import '../../models/sale.dart';
 import '../../services/database_service.dart';
 import '../models/commercial_models.dart';
 import 'security_service.dart';
 
 class CommercialService {
-  CommercialService(
-    this._database, {
-    SecurityService security = const SecurityService(),
-  }) : _security = security;
+  CommercialService(this._database, {this._security = const SecurityService()});
 
   final DatabaseService _database;
   final SecurityService _security;
@@ -209,8 +205,9 @@ class CommercialService {
         whereArgs: [branchId],
         limit: 1,
       );
-      if (branch.isEmpty)
+      if (branch.isEmpty) {
         throw StateError('The selected branch is not active.');
+      }
       final now = DateTime.now().toIso8601String();
       final id = await txn.insert('users', {
         'branch_id': branchId,
@@ -332,8 +329,9 @@ class CommercialService {
         whereArgs: [primaryBranchId],
         limit: 1,
       );
-      if (branch.isEmpty)
+      if (branch.isEmpty) {
         throw StateError('The selected branch is not active.');
+      }
       final now = DateTime.now().toIso8601String();
       await txn.update(
         'users',
@@ -1215,8 +1213,9 @@ class CommercialService {
     String note = '',
   }) async {
     _require(actor, CommercialPermission.cashManage);
-    if (openingFloat < 0)
+    if (openingFloat < 0) {
       throw ArgumentError('Opening float cannot be negative.');
+    }
     final db = await _database.database;
     return db.transaction((txn) async {
       final register = await txn.query(
@@ -1766,8 +1765,9 @@ class CommercialService {
         whereArgs: [documentId, actor.branchId, 'draft'],
         limit: 1,
       );
-      if (rows.isEmpty)
+      if (rows.isEmpty) {
         throw StateError('Only a draft document can be issued.');
+      }
       final document = rows.first;
       final now = DateTime.now().toIso8601String();
       var debtPosted = (document['debt_posted'] as num? ?? 0).toInt();
@@ -2660,8 +2660,9 @@ class CommercialService {
     String note = '',
   }) async {
     _require(actor, CommercialPermission.stockAdjust);
-    if (quantityChange == 0)
+    if (quantityChange == 0) {
       throw ArgumentError('Quantity change is required.');
+    }
     final db = await _database.database;
     await db.transaction((txn) async {
       final stock = await txn.query(
@@ -2674,8 +2675,9 @@ class CommercialService {
       if (stock.isEmpty) throw StateError('Product is not stocked here.');
       final oldQty = (stock.first['stock_qty'] as num).toDouble();
       final newQty = oldQty + quantityChange;
-      if (newQty < 0)
+      if (newQty < 0) {
         throw StateError('Adjustment would create negative stock.');
+      }
       await txn.update(
         'branch_inventory',
         {'stock_qty': newQty, 'updated_at': DateTime.now().toIso8601String()},
@@ -2790,8 +2792,9 @@ class CommercialService {
         whereArgs: [stockCountId, actor.branchId, 'draft'],
         limit: 1,
       );
-      if (counts.isEmpty)
+      if (counts.isEmpty) {
         throw StateError('Stock count is not awaiting approval.');
+      }
       final missing =
           firstIntValue(
             await txn.rawQuery(
@@ -2800,8 +2803,9 @@ class CommercialService {
             ),
           ) ??
           0;
-      if (missing > 0)
+      if (missing > 0) {
         throw StateError('$missing products have not been counted.');
+      }
       final items = await txn.query(
         'stock_count_items',
         where: 'stock_count_id = ? AND posted = 0',
@@ -4105,8 +4109,9 @@ class CommercialService {
     final refundValue = (refunds.first['value'] as num? ?? 0).toDouble();
     final cashVariance = (variance.first['value'] as num? ?? 0).toDouble();
     final suggestions = <String>[];
-    if (low > 0)
+    if (low > 0) {
       suggestions.add('Reorder $low low-stock product${low == 1 ? '' : 's'}.');
+    }
     if (expiringCount > 0) {
       suggestions.add(
         'Review $expiringCount batch${expiringCount == 1 ? '' : 'es'} expiring within 30 days.',
@@ -4117,14 +4122,16 @@ class CommercialService {
         'Customer debt is high compared with recorded revenue. Follow up overdue accounts.',
       );
     }
-    if (supplier > 0)
+    if (supplier > 0) {
       suggestions.add(
         'Review unpaid supplier balances before their due dates.',
       );
-    if (cashVariance > 0)
+    }
+    if (cashVariance > 0) {
       suggestions.add(
         'Investigate closed cash sessions with recorded variances.',
       );
+    }
     if (revenue > 0 && refundValue / revenue > 0.05) {
       suggestions.add(
         'Refunds exceed 5% of revenue. Review return reasons and product quality.',
@@ -4282,8 +4289,9 @@ class CommercialService {
       whereArgs: [customerId, branchId],
       limit: 1,
     );
-    if (rows.isEmpty)
+    if (rows.isEmpty) {
       throw StateError('Customer was not found in this branch.');
+    }
     final row = rows.first;
     if ((row['credit_enabled'] as num? ?? 1).toInt() != 1) {
       throw StateError('Credit is disabled for this customer.');
@@ -4307,8 +4315,9 @@ class CommercialService {
       whereArgs: [cashSessionId, actor.branchId, actor.id, 'open'],
       limit: 1,
     );
-    if (sessions.isEmpty)
+    if (sessions.isEmpty) {
       throw StateError('The cash-register session is not open.');
+    }
   }
 
   static Future<void> _writeDocumentHistory(

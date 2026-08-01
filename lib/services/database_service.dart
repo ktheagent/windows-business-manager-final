@@ -1254,8 +1254,9 @@ class DatabaseService {
         'UPDATE ${contact.table} SET balance = MAX(0, balance - ?) WHERE id = ? AND branch_id = ?',
         [amount, contact.id, branchId],
       );
-      if (changed != 1)
+      if (changed != 1) {
         throw StateError('Contact was not found in this branch.');
+      }
       if (contact.type == ContactType.customer) {
         await txn.insert('customer_transactions', {
           'customer_id': contact.id,

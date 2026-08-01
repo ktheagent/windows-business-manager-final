@@ -322,7 +322,7 @@ class _StockTransferReceiptDialogState
         height: 560,
         child: ListView.separated(
           itemCount: widget.items.length,
-          separatorBuilder: (_, __) => const Divider(),
+          separatorBuilder: (_, _) => const Divider(),
           itemBuilder: (context, index) {
             final item = widget.items[index];
             final productId = item['product_id'] as int;
