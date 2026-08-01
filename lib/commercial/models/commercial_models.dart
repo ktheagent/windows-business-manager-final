@@ -248,9 +248,8 @@ class CommercialDocumentItem {
     return MoneyMath.percent(lineSubtotal, taxRate);
   }
 
-  double get total => taxInclusive
-      ? lineSubtotal
-      : MoneyMath.add([lineSubtotal, taxAmount]);
+  double get total =>
+      taxInclusive ? lineSubtotal : MoneyMath.add([lineSubtotal, taxAmount]);
 
   Map<String, Object?> toMap() => {
     'product_id': productId,
@@ -293,10 +292,8 @@ class CommercialDocumentDraft {
   final String paymentInstructions;
   final DateTime? documentDate;
 
-  double get subtotal =>
-      MoneyMath.add(items.map((item) => item.lineSubtotal));
-  double get itemTax =>
-      MoneyMath.add(items.map((item) => item.taxAmount));
+  double get subtotal => MoneyMath.add(items.map((item) => item.lineSubtotal));
+  double get itemTax => MoneyMath.add(items.map((item) => item.taxAmount));
   double get exclusiveItemTax => MoneyMath.add(
     items.where((item) => !item.taxInclusive).map((item) => item.taxAmount),
   );

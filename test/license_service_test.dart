@@ -150,16 +150,19 @@ void main() {
       );
     });
 
-    test('a new installation requires activation or an explicit trial', () async {
-      final status = await service.initialize(
-        businessName: 'Test Business',
-        validateOnline: false,
-      );
+    test(
+      'a new installation requires activation or an explicit trial',
+      () async {
+        final status = await service.initialize(
+          businessName: 'Test Business',
+          validateOnline: false,
+        );
 
-      expect(status.state, LicenseState.activationRequired);
-      expect(status.canStartTrial, isTrue);
-      expect(status.message, contains('one-time 14-day trial'));
-    });
+        expect(status.state, LicenseState.activationRequired);
+        expect(status.canStartTrial, isTrue);
+        expect(status.message, contains('one-time 14-day trial'));
+      },
+    );
 
     test('restarting or requesting trial again never extends expiry', () async {
       final first = await service.registerTrial(businessName: 'Test Business');
@@ -220,60 +223,66 @@ void main() {
       expect(api.activationCalls, 1);
     });
 
-    test('revoked server state is persisted and remains revoked offline', () async {
-      await service.activateLicense(
-        licenseKey: 'ABM-TEST-TEST-TEST-TEST',
-        businessName: 'Test Business',
-      );
-      api.validationFailureStatus = 'revoked';
+    test(
+      'revoked server state is persisted and remains revoked offline',
+      () async {
+        await service.activateLicense(
+          licenseKey: 'ABM-TEST-TEST-TEST-TEST',
+          businessName: 'Test Business',
+        );
+        api.validationFailureStatus = 'revoked';
 
-      final onlineStatus = await service.initialize(
-        businessName: 'Test Business',
-      );
-      expect(onlineStatus.state, LicenseState.revoked);
-      expect(onlineStatus.isRestricted, isTrue);
+        final onlineStatus = await service.initialize(
+          businessName: 'Test Business',
+        );
+        expect(onlineStatus.state, LicenseState.revoked);
+        expect(onlineStatus.isRestricted, isTrue);
 
-      final offlineService = LicenseService(
-        storage: storage,
-        apiClient: api,
-        deviceIdentityService: FakeDeviceIdentityService(),
-        appVersion: '1.1.1',
-        now: clock.call,
-      );
-      final offlineStatus = await offlineService.initialize(
-        businessName: 'Test Business',
-        validateOnline: false,
-      );
+        final offlineService = LicenseService(
+          storage: storage,
+          apiClient: api,
+          deviceIdentityService: FakeDeviceIdentityService(),
+          appVersion: '1.1.1',
+          now: clock.call,
+        );
+        final offlineStatus = await offlineService.initialize(
+          businessName: 'Test Business',
+          validateOnline: false,
+        );
 
-      expect(offlineStatus.state, LicenseState.revoked);
-      expect(offlineStatus.isRestricted, isTrue);
-    });
+        expect(offlineStatus.state, LicenseState.revoked);
+        expect(offlineStatus.isRestricted, isTrue);
+      },
+    );
 
-    test('server response aliases preserve real paid expiry and business', () async {
-      storage.value = jsonEncode({
-        'success': true,
-        'licenseId': 55,
-        'token': 'saved-token',
-        'status': 'active',
-        'plan': 'annual',
-        'startsAt': '2026-07-31T00:00:00Z',
-        'expiresAt': '2027-07-31T00:00:00Z',
-        'offlineGraceDeadline': '2027-08-07T00:00:00Z',
-        'deviceIdentifier': 'TEST-DEVICE-001',
-        'deviceLimit': 1,
-        'businessName': 'Airmonlink',
-      });
+    test(
+      'server response aliases preserve real paid expiry and business',
+      () async {
+        storage.value = jsonEncode({
+          'success': true,
+          'licenseId': 55,
+          'token': 'saved-token',
+          'status': 'active',
+          'plan': 'annual',
+          'startsAt': '2026-07-31T00:00:00Z',
+          'expiresAt': '2027-07-31T00:00:00Z',
+          'offlineGraceDeadline': '2027-08-07T00:00:00Z',
+          'deviceIdentifier': 'TEST-DEVICE-001',
+          'deviceLimit': 1,
+          'businessName': 'Airmonlink',
+        });
 
-      final status = await service.initialize(
-        businessName: 'Airmonlink',
-        validateOnline: false,
-      );
+        final status = await service.initialize(
+          businessName: 'Airmonlink',
+          validateOnline: false,
+        );
 
-      expect(status.state, LicenseState.active);
-      expect(status.expiresAt, DateTime.utc(2027, 7, 31));
-      expect(status.businessName, 'Airmonlink');
-      expect(service.currentLicense?.licenseId, '55');
-      expect(service.currentLicense?.activatedDevice, 'TEST-DEVICE-001');
-    });
+        expect(status.state, LicenseState.active);
+        expect(status.expiresAt, DateTime.utc(2027, 7, 31));
+        expect(status.businessName, 'Airmonlink');
+        expect(service.currentLicense?.licenseId, '55');
+        expect(service.currentLicense?.activatedDevice, 'TEST-DEVICE-001');
+      },
+    );
   });
 }

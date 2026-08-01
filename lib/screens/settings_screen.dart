@@ -103,8 +103,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   'Business identity and document branding',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 _field(businessName, 'Business name'),
@@ -126,10 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Expanded(child: _field(taxNumber, 'Tax number')),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _field(
-                        registrationNumber,
-                        'Registration number',
-                      ),
+                      child: _field(registrationNumber, 'Registration number'),
                     ),
                   ],
                 ),
@@ -184,8 +181,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   'Email delivery',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -265,10 +262,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String label, {
     int maxLines = 1,
   }) => TextField(
-        controller: controller,
-        maxLines: maxLines,
-        decoration: InputDecoration(labelText: label),
-      );
+    controller: controller,
+    maxLines: maxLines,
+    decoration: InputDecoration(labelText: label),
+  );
 
   Future<void> _selectLogo() async {
     final result = await FilePicker.platform.pickFiles(

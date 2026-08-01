@@ -13,7 +13,8 @@ class SecureConfigService {
 
   Future<void> delete(String key) => _storage.delete(key: 'abm.$key');
 
-  Future<void> saveSmtpPassword(String password) => write('smtp.password', password);
+  Future<void> saveSmtpPassword(String password) =>
+      write('smtp.password', password);
   Future<String?> smtpPassword() => read('smtp.password');
 
   Future<void> saveWebDavPassword(String password) =>
@@ -24,16 +25,13 @@ class SecureConfigService {
       write('remote_dashboard.token', token);
   Future<String?> remoteDashboardToken() => read('remote_dashboard.token');
 
-
   Future<void> saveWhatsAppAccessToken(String token) =>
       write('whatsapp.access_token', token);
-  Future<String?> whatsAppAccessToken() =>
-      read('whatsapp.access_token');
+  Future<String?> whatsAppAccessToken() => read('whatsapp.access_token');
 
   Future<void> saveUpdateClientSecret(String secret) =>
       write('updates.client_secret', secret);
-  Future<String?> updateClientSecret() =>
-      read('updates.client_secret');
+  Future<String?> updateClientSecret() => read('updates.client_secret');
 
   Future<void> clearIntegrationSecrets() async {
     for (final key in [

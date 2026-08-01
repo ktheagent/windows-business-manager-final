@@ -35,67 +35,70 @@ void main() {
     expect(security.verifyPin('1111', first), isFalse);
   });
 
-  test('issued invoice posts customer debt once and part payment reduces it', () async {
-    final product = (await database.getProducts()).first;
-    final customerId = await database.addContact(
-      BusinessContact(
-        id: null,
-        type: ContactType.customer,
-        name: 'Invoice Customer',
-        phone: '0240000000',
-        email: '',
-        balance: 0,
-        createdAt: DateTime.now(),
-      ),
-    );
-    final documentId = await commercial.createDocument(
-      actor: owner,
-      draft: CommercialDocumentDraft(
-        type: 'invoice',
-        customerId: customerId,
-        items: [
-          CommercialDocumentItem(
-            productId: product.id,
-            description: product.name,
-            quantity: 2,
-            unitPrice: product.sellingPrice,
-            costPrice: product.costPrice,
-          ),
-        ],
-        discount: 0,
-        tax: 0,
-        notes: '',
-        terms: '',
-      ),
-    );
+  test(
+    'issued invoice posts customer debt once and part payment reduces it',
+    () async {
+      final product = (await database.getProducts()).first;
+      final customerId = await database.addContact(
+        BusinessContact(
+          id: null,
+          type: ContactType.customer,
+          name: 'Invoice Customer',
+          phone: '0240000000',
+          email: '',
+          balance: 0,
+          createdAt: DateTime.now(),
+        ),
+      );
+      final documentId = await commercial.createDocument(
+        actor: owner,
+        draft: CommercialDocumentDraft(
+          type: 'invoice',
+          customerId: customerId,
+          items: [
+            CommercialDocumentItem(
+              productId: product.id,
+              description: product.name,
+              quantity: 2,
+              unitPrice: product.sellingPrice,
+              costPrice: product.costPrice,
+            ),
+          ],
+          discount: 0,
+          tax: 0,
+          notes: '',
+          terms: '',
+        ),
+      );
 
-    await commercial.issueDocument(actor: owner, documentId: documentId);
-    final expected = product.sellingPrice * 2;
-    expect(
-      (await database.getContacts(ContactType.customer)).single.balance,
-      expected,
-    );
-    await expectLater(
-      commercial.issueDocument(actor: owner, documentId: documentId),
-      throwsStateError,
-    );
-    expect(
-      (await database.getContacts(ContactType.customer)).single.balance,
-      expected,
-    );
+      await commercial.issueDocument(actor: owner, documentId: documentId);
+      final expected = product.sellingPrice * 2;
+      expect(
+        (await database.getContacts(ContactType.customer)).single.balance,
+        expected,
+      );
+      await expectLater(
+        commercial.issueDocument(actor: owner, documentId: documentId),
+        throwsStateError,
+      );
+      expect(
+        (await database.getContacts(ContactType.customer)).single.balance,
+        expected,
+      );
 
-    await commercial.recordDocumentPayment(
-      actor: owner,
-      documentId: documentId,
-      amount: 1,
-      paymentMethod: 'Bank',
-      reference: 'TEST',
-    );
-    expect(
-      (await database.getContacts(ContactType.customer)).single.balance,
-      expected - 1,
-    );
-  });
+      await commercial.recordDocumentPayment(
+        actor: owner,
+        documentId: documentId,
+        amount: 1,
+        paymentMethod: 'Bank',
+        reference: 'TEST',
+      );
+      expect(
+        (await database.getContacts(ContactType.customer)).single.balance,
+        expected - 1,
+      );
+    },
+  );
 
   test('first purchase receipt increases stock exactly once', () async {
     final product = (await database.getProducts()).first;

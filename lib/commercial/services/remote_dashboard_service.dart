@@ -40,7 +40,9 @@ class RemoteDashboardService {
     );
     _server = server;
     server.listen(_handle, onError: (_) => stop());
-    return Uri.parse('http://127.0.0.1:${server.port}/?token=${Uri.encodeQueryComponent(token)}');
+    return Uri.parse(
+      'http://127.0.0.1:${server.port}/?token=${Uri.encodeQueryComponent(token)}',
+    );
   }
 
   Future<void> stop() async {
@@ -77,7 +79,9 @@ class RemoteDashboardService {
         .where((cookie) => cookie.name == 'abm_owner_session')
         .map((cookie) => cookie.value)
         .firstOrNull;
-    final authorization = request.headers.value(HttpHeaders.authorizationHeader);
+    final authorization = request.headers.value(
+      HttpHeaders.authorizationHeader,
+    );
     final bearer = authorization?.startsWith('Bearer ') == true
         ? authorization!.substring(7)
         : null;
@@ -127,8 +131,10 @@ class RemoteDashboardService {
 
   bool _allowRequest(String remote) {
     final now = DateTime.now();
-    final recent = _requests.putIfAbsent(remote, () => <DateTime>[])
-      ..removeWhere((time) => now.difference(time) > const Duration(minutes: 1));
+    final recent = _requests.putIfAbsent(
+      remote,
+      () => <DateTime>[],
+    )..removeWhere((time) => now.difference(time) > const Duration(minutes: 1));
     if (recent.length >= 60) return false;
     recent.add(now);
     return true;
@@ -137,8 +143,11 @@ class RemoteDashboardService {
   Future<Map<String, Object?>> _summary() async {
     final db = await _database.database;
     final today = DateTime.now();
-    final start =
-        DateTime(today.year, today.month, today.day).toIso8601String();
+    final start = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).toIso8601String();
     final branchClause = _consolidated ? '' : 'AND branch_id = ?';
     final args = _consolidated ? <Object?>[] : <Object?>[_branchId];
     final sales = await db.rawQuery(
@@ -171,10 +180,7 @@ class RemoteDashboardService {
       'SELECT COUNT(*) AS value FROM product_batches '
       'WHERE quantity > 0 AND expires_at IS NOT NULL '
       'AND expires_at <= ? $branchClause',
-      [
-        DateTime.now().add(const Duration(days: 30)).toIso8601String(),
-        ...args,
-      ],
+      [DateTime.now().add(const Duration(days: 30)).toIso8601String(), ...args],
     );
     final openCash = await db.rawQuery(
       "SELECT COUNT(*) AS value FROM cash_sessions "
@@ -189,7 +195,8 @@ class RemoteDashboardService {
       "${_consolidated ? '' : 'AND cs.branch_id = ?'}",
       [start, ...args],
     );
-    final branches = await db.rawQuery('''
+    final branches = await db.rawQuery(
+      '''
       SELECT b.name,
         COALESCE(SUM(s.total - s.returned_total), 0) AS sales
       FROM branches b
@@ -198,7 +205,9 @@ class RemoteDashboardService {
       WHERE b.is_active = 1
         ${_consolidated ? '' : 'AND b.id = ?'}
       GROUP BY b.id ORDER BY sales DESC
-    ''', [start, ...args]);
+    ''',
+      [start, ...args],
+    );
     final topProducts = await db.rawQuery('''
       SELECT si.product_name, SUM(si.quantity) AS quantity,
         SUM(si.total) AS revenue
@@ -241,7 +250,10 @@ class RemoteDashboardService {
   Future<String> _html() async {
     final data = await _summary();
     final branches = (data['branches'] as List<Map<String, Object?>>)
-        .map((row) => '<tr><td>${_escape('${row['name']}')}</td><td>${_money(row['sales'])}</td></tr>')
+        .map(
+          (row) =>
+              '<tr><td>${_escape('${row['name']}')}</td><td>${_money(row['sales'])}</td></tr>',
+        )
         .join();
     return '''<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">

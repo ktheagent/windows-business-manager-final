@@ -15,8 +15,7 @@ class LicenseScreen extends StatefulWidget {
 
 class _LicenseScreenState extends State<LicenseScreen> {
   final TextEditingController _licenseController = TextEditingController();
-  final TextEditingController _businessNameController =
-      TextEditingController();
+  final TextEditingController _businessNameController = TextEditingController();
   bool _editingLicense = false;
 
   @override
@@ -144,9 +143,7 @@ class _LicenseScreenState extends State<LicenseScreen> {
                       _StatusPanel(status: status),
                       if (widget.controller.errorMessage != null) ...[
                         const SizedBox(height: 12),
-                        _ErrorMessage(
-                          message: widget.controller.errorMessage!,
-                        ),
+                        _ErrorMessage(message: widget.controller.errorMessage!),
                       ],
                       if (status.isPaidLicense && !_editingLicense) ...[
                         const SizedBox(height: 20),
@@ -165,14 +162,14 @@ class _LicenseScreenState extends State<LicenseScreen> {
                               onPressed: loading
                                   ? null
                                   : () {
-                                      final savedName = widget
+                                      final savedName =
+                                          widget
                                               .controller
                                               .license
                                               ?.businessName
                                               .trim() ??
                                           '';
-                                      if (_businessNameController
-                                              .text
+                                      if (_businessNameController.text
                                               .trim()
                                               .isEmpty &&
                                           savedName.isNotEmpty) {
@@ -207,12 +204,10 @@ class _LicenseScreenState extends State<LicenseScreen> {
                           loading: loading,
                           showCancel: status.isPaidLicense,
                           onActivate: _activate,
-                          onCancel: () => setState(
-                            () {
-                              _editingLicense = false;
-                              _licenseController.clear();
-                            },
-                          ),
+                          onCancel: () => setState(() {
+                            _editingLicense = false;
+                            _licenseController.clear();
+                          }),
                         ),
                         if (status.canStartTrial) ...[
                           const SizedBox(height: 12),
@@ -312,7 +307,10 @@ class _ActivationForm extends StatelessWidget {
               label: const Text('Activate licence'),
             ),
             if (showCancel)
-              TextButton(onPressed: loading ? null : onCancel, child: const Text('Cancel')),
+              TextButton(
+                onPressed: loading ? null : onCancel,
+                child: const Text('Cancel'),
+              ),
           ],
         ),
       ],

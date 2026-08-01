@@ -18,21 +18,21 @@ void main() {
       await createTestProduct(database);
       final products = await database.getProducts();
       await database.createSale(
-          SaleDraft(
-            items: [
-              SaleItem(
-                productId: products.first.id,
-                productName: products.first.name,
-                quantity: 1,
-                unitPrice: products.first.sellingPrice,
-                costPrice: products.first.costPrice,
-              ),
-            ],
-            discount: 0,
-            paymentMethod: 'Cash',
-            customerId: null,
-          ),
-        );
+        SaleDraft(
+          items: [
+            SaleItem(
+              productId: products.first.id,
+              productName: products.first.name,
+              quantity: 1,
+              unitPrice: products.first.sellingPrice,
+              costPrice: products.first.costPrice,
+            ),
+          ],
+          discount: 0,
+          paymentMethod: 'Cash',
+          customerId: null,
+        ),
+      );
       await state.refreshAll();
     });
 

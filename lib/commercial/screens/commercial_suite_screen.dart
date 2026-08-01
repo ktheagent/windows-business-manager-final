@@ -21,7 +21,6 @@ class CommercialSuiteScreen extends StatefulWidget {
 }
 
 class _CommercialSuiteScreenState extends State<CommercialSuiteScreen> {
-
   @override
   Widget build(BuildContext context) {
     final state = AppStateScope.of(context);
@@ -46,7 +45,10 @@ class _CommercialSuiteScreenState extends State<CommercialSuiteScreen> {
         const _SuiteTab('Cash & returns', Icons.point_of_sale_outlined),
       if (user.can(CommercialPermission.staffManage) ||
           user.can(CommercialPermission.branchesManage))
-        const _SuiteTab('Staff & branches', Icons.admin_panel_settings_outlined),
+        const _SuiteTab(
+          'Staff & branches',
+          Icons.admin_panel_settings_outlined,
+        ),
       if (user.can(CommercialPermission.backupsManage) ||
           user.can(CommercialPermission.importsManage) ||
           user.can(CommercialPermission.remoteDashboard) ||
@@ -58,41 +60,42 @@ class _CommercialSuiteScreenState extends State<CommercialSuiteScreen> {
     return DefaultTabController(
       length: tabs.length,
       child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const PageHeader(
-            title: 'Commercial Suite',
-            subtitle:
-                'Documents, purchasing, stock control, staff security and premium operations.',
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: TabBar(
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              tabs: [
-                for (final tab in tabs)
-                  Tab(icon: Icon(tab.icon), text: tab.label),
-              ],
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const PageHeader(
+              title: 'Commercial Suite',
+              subtitle:
+                  'Documents, purchasing, stock control, staff security and premium operations.',
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: TabBarView(
-              children: [
-                for (final tab in tabs) _buildTab(tab.label, state, user),
-              ],
+            const SizedBox(height: 16),
+            Card(
+              child: TabBar(
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                tabs: [
+                  for (final tab in tabs)
+                    Tab(icon: Icon(tab.icon), text: tab.label),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  for (final tab in tabs) _buildTab(tab.label, state, user),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
-  Widget _buildTab(String label, AppState state, StaffUser user) => switch (label) {
+  Widget _buildTab(String label, AppState state, StaffUser user) =>
+      switch (label) {
         'Health' => _HealthPanel(state: state, user: user),
         'Documents' => _DocumentsPanel(state: state, user: user),
         'Reports' => _ReportsPanel(state: state, user: user),
@@ -120,7 +123,8 @@ class _HealthPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final consolidated = user.role == StaffRole.owner || user.role == StaffRole.manager;
+    final consolidated =
+        user.role == StaffRole.owner || user.role == StaffRole.manager;
     return FutureBuilder<BusinessHealthSnapshot>(
       future: state.commercial.businessHealth(
         actor: user,
@@ -136,7 +140,11 @@ class _HealthPanel extends StatelessWidget {
           ('Revenue', health.revenue, Icons.payments_outlined),
           ('Gross profit', health.grossProfit, Icons.trending_up),
           ('Expenses', health.expenses, Icons.receipt_long_outlined),
-          ('Net profit', health.netProfit, Icons.account_balance_wallet_outlined),
+          (
+            'Net profit',
+            health.netProfit,
+            Icons.account_balance_wallet_outlined,
+          ),
           ('Customer debt', health.customerDebt, Icons.people_outline),
           ('Supplier debt', health.supplierDebt, Icons.local_shipping_outlined),
           ('Cash variance', health.cashVariance, Icons.warning_amber_outlined),
@@ -217,11 +225,15 @@ class _HealthPanel extends StatelessWidget {
                         children: [
                           Chip(
                             avatar: const Icon(Icons.inventory_2_outlined),
-                            label: Text('${health.lowStockCount} low-stock items'),
+                            label: Text(
+                              '${health.lowStockCount} low-stock items',
+                            ),
                           ),
                           Chip(
                             avatar: const Icon(Icons.event_busy_outlined),
-                            label: Text('${health.expiringCount} expiring batches'),
+                            label: Text(
+                              '${health.expiringCount} expiring batches',
+                            ),
                           ),
                           Chip(
                             avatar: const Icon(Icons.undo_outlined),
@@ -279,7 +291,8 @@ class _HealthPanel extends StatelessWidget {
         consolidated:
             user.role == StaffRole.owner || user.role == StaffRole.manager,
       );
-      if (context.mounted) showSuccess(context, 'Profit report exported: $path');
+      if (context.mounted)
+        showSuccess(context, 'Profit report exported: $path');
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -305,8 +318,8 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
   }
 
   void reload() => setState(() {
-        future = widget.state.commercial.listDocuments(widget.user);
-      });
+    future = widget.state.commercial.listDocuments(widget.user);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -341,14 +354,18 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
                 itemBuilder: (context, index) {
                   final document = snapshot.data![index];
                   final id = document['id'] as int;
-                  final type = (document['document_type'] as String)
-                      .replaceAll('_', ' ');
+                  final type = (document['document_type'] as String).replaceAll(
+                    '_',
+                    ' ',
+                  );
                   return Card(
                     child: ListTile(
                       leading: CircleAvatar(
-                        child: Icon(type == 'invoice'
-                            ? Icons.request_quote_outlined
-                            : Icons.description_outlined),
+                        child: Icon(
+                          type == 'invoice'
+                              ? Icons.request_quote_outlined
+                              : Icons.description_outlined,
+                        ),
                       ),
                       title: Text('${document['document_no']} • $type'),
                       subtitle: Text(
@@ -356,29 +373,65 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
                         '${document['status']} • ${AppFormatters.money((document['total'] as num).toDouble())}',
                       ),
                       trailing: PopupMenuButton<String>(
-                        onSelected: (value) => _documentAction(context, document, value),
+                        onSelected: (value) =>
+                            _documentAction(context, document, value),
                         itemBuilder: (_) => [
-                          const PopupMenuItem(value: 'preview', child: Text('Preview / print')),
+                          const PopupMenuItem(
+                            value: 'preview',
+                            child: Text('Preview / print'),
+                          ),
                           if (document['status'] == 'draft')
-                            const PopupMenuItem(value: 'edit', child: Text('Edit draft')),
-                          const PopupMenuItem(value: 'duplicate', child: Text('Duplicate document')),
-                          const PopupMenuItem(value: 'history', child: Text('Status history')),
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Edit draft'),
+                            ),
+                          const PopupMenuItem(
+                            value: 'duplicate',
+                            child: Text('Duplicate document'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'history',
+                            child: Text('Status history'),
+                          ),
                           if ({'draft', 'issued'}.contains(document['status']))
-                            const PopupMenuItem(value: 'cancel', child: Text('Cancel document')),
+                            const PopupMenuItem(
+                              value: 'cancel',
+                              child: Text('Cancel document'),
+                            ),
                           if (document['status'] == 'draft')
-                            const PopupMenuItem(value: 'issue', child: Text('Issue document')),
+                            const PopupMenuItem(
+                              value: 'issue',
+                              child: Text('Issue document'),
+                            ),
                           if (document['document_type'] == 'quotation' &&
                               document['status'] != 'converted')
-                            const PopupMenuItem(value: 'invoice', child: Text('Convert to invoice')),
+                            const PopupMenuItem(
+                              value: 'invoice',
+                              child: Text('Convert to invoice'),
+                            ),
                           if (document['converted_sale_id'] == null)
-                            const PopupMenuItem(value: 'sale', child: Text('Convert to sale')),
+                            const PopupMenuItem(
+                              value: 'sale',
+                              child: Text('Convert to sale'),
+                            ),
                           if (document['document_type'] == 'invoice' &&
-                              (document['balance_due'] as num? ?? 0).toDouble() > 0)
-                            const PopupMenuItem(value: 'payment', child: Text('Record payment')),
+                              (document['balance_due'] as num? ?? 0)
+                                      .toDouble() >
+                                  0)
+                            const PopupMenuItem(
+                              value: 'payment',
+                              child: Text('Record payment'),
+                            ),
                           if ('${document['customer_phone'] ?? ''}'.isNotEmpty)
-                            const PopupMenuItem(value: 'whatsapp', child: Text('Send with WhatsApp')),
+                            const PopupMenuItem(
+                              value: 'whatsapp',
+                              child: Text('Send with WhatsApp'),
+                            ),
                           if ('${document['customer_email'] ?? ''}'.isNotEmpty)
-                            const PopupMenuItem(value: 'email', child: Text('Send by email')),
+                            const PopupMenuItem(
+                              value: 'email',
+                              child: Text('Send by email'),
+                            ),
                         ],
                       ),
                     ),
@@ -432,8 +485,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
               costPrice: (row['cost_price'] as num? ?? 0).toDouble(),
               lineDiscount: (row['line_discount'] as num? ?? 0).toDouble(),
               taxRate: (row['tax_rate'] as num? ?? 0).toDouble(),
-              taxInclusive:
-                  (row['tax_inclusive'] as num? ?? 0).toInt() == 1,
+              taxInclusive: (row['tax_inclusive'] as num? ?? 0).toInt() == 1,
             ),
           )
           .toList(growable: false),
@@ -443,8 +495,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
       terms: document['terms'] as String? ?? '',
       validUntil: _parseDate(document['valid_until']),
       dueAt: _parseDate(document['due_at']),
-      paymentInstructions:
-          document['payment_instructions'] as String? ?? '',
+      paymentInstructions: document['payment_instructions'] as String? ?? '',
       documentDate: _parseDate(document['document_date']),
     );
   }
@@ -490,10 +541,7 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
     return value;
   }
 
-  Future<void> _showHistory(
-    BuildContext context,
-    int documentId,
-  ) async {
+  Future<void> _showHistory(BuildContext context, int documentId) async {
     final history = await widget.state.commercial.documentStatusHistory(
       actor: widget.user,
       documentId: documentId,
@@ -593,10 +641,16 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
           );
           break;
         case 'issue':
-          await widget.state.commercial.issueDocument(actor: widget.user, documentId: id);
+          await widget.state.commercial.issueDocument(
+            actor: widget.user,
+            documentId: id,
+          );
           break;
         case 'invoice':
-          await widget.state.commercial.convertQuotationToInvoice(actor: widget.user, quotationId: id);
+          await widget.state.commercial.convertQuotationToInvoice(
+            actor: widget.user,
+            quotationId: id,
+          );
           break;
         case 'sale':
           await widget.state.commercial.convertDocumentToSale(
@@ -613,7 +667,9 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
             actor: widget.user,
             documentId: id,
             amount: amount,
-            paymentMethod: widget.state.currentCashSession == null ? 'Bank' : 'Cash',
+            paymentMethod: widget.state.currentCashSession == null
+                ? 'Bank'
+                : 'Cash',
             reference: '',
             cashSessionId: widget.state.currentCashSession?['id'] as int?,
           );
@@ -642,7 +698,9 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
             ssl: widget.state.settings['smtp_ssl'] == 'true',
             username: username,
             password: password,
-            senderName: widget.state.settings['smtp_sender_name'] ?? widget.state.businessName,
+            senderName:
+                widget.state.settings['smtp_sender_name'] ??
+                widget.state.businessName,
             recipient: '${document['customer_email']}',
             subject: '${document['document_type']} ${document['document_no']}',
             body: 'Please find your document attached.',
@@ -661,7 +719,6 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
     }
   }
 }
-
 
 class _ReportsPanel extends StatefulWidget {
   const _ReportsPanel({required this.state, required this.user});
@@ -706,10 +763,10 @@ class _ReportsPanelState extends State<_ReportsPanel> {
   }
 
   Future<CommercialReportResult> _load() => widget.state.advancedReports.run(
-        actor: widget.user,
-        kind: kind,
-        filter: filter,
-      );
+    actor: widget.user,
+    kind: kind,
+    filter: filter,
+  );
 
   void reload() {
     setState(() {
@@ -719,7 +776,8 @@ class _ReportsPanelState extends State<_ReportsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final mayConsolidate = widget.user.role == StaffRole.owner ||
+    final mayConsolidate =
+        widget.user.role == StaffRole.owner ||
         widget.user.role == StaffRole.manager;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -736,10 +794,7 @@ class _ReportsPanelState extends State<_ReportsPanel> {
                 decoration: const InputDecoration(labelText: 'Report'),
                 items: [
                   for (final item in CommercialReportKind.values)
-                    DropdownMenuItem(
-                      value: item,
-                      child: Text(item.label),
-                    ),
+                    DropdownMenuItem(value: item, child: Text(item.label)),
                 ],
                 onChanged: (value) {
                   if (value == null) return;
@@ -857,7 +912,9 @@ class _ReportsPanelState extends State<_ReportsPanel> {
                                     cells: [
                                       for (final column in result.columns)
                                         DataCell(
-                                          SelectableText('${row[column] ?? ''}'),
+                                          SelectableText(
+                                            '${row[column] ?? ''}',
+                                          ),
                                         ),
                                     ],
                                   ),
@@ -907,9 +964,7 @@ class _ReportsPanelState extends State<_ReportsPanel> {
           title: '${kind.label} report',
           fileName: '${kind.name}-report.pdf',
           initialPageFormat: PdfPageFormat.a4.landscape,
-          pageFormats: const {
-            'A4 landscape': PdfPageFormat.a4.landscape,
-          },
+          pageFormats: const {'A4 landscape': PdfPageFormat.a4.landscape},
           buildPdf: (_) => widget.state.advancedReports.buildPdf(
             result: result,
             businessName: widget.state.businessName,
@@ -947,18 +1002,19 @@ class _ActualDataBarChart extends StatelessWidget {
       }
     }
     if (valueColumn == null) {
-      return const Center(child: Text('This report has no numeric chart series.'));
+      return const Center(
+        child: Text('This report has no numeric chart series.'),
+      );
     }
     final rows = result.rows.take(12).toList(growable: false);
-    final maximum = rows.fold<double>(
-      0,
-      (current, row) {
-        final value = (row[valueColumn] as num? ?? 0).toDouble().abs();
-        return value > current ? value : current;
-      },
-    );
+    final maximum = rows.fold<double>(0, (current, row) {
+      final value = (row[valueColumn] as num? ?? 0).toDouble().abs();
+      return value > current ? value : current;
+    });
     if (maximum <= 0) {
-      return const Center(child: Text('There is not enough numeric data to chart.'));
+      return const Center(
+        child: Text('There is not enough numeric data to chart.'),
+      );
     }
     return Card(
       margin: EdgeInsets.zero,
@@ -970,8 +1026,7 @@ class _ActualDataBarChart extends StatelessWidget {
             for (final row in rows)
               Expanded(
                 child: Tooltip(
-                  message:
-                      '${row[labelColumn]}: ${row[valueColumn] ?? 0}',
+                  message: '${row[labelColumn]}: ${row[valueColumn] ?? 0}',
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
                     child: Column(
@@ -981,17 +1036,18 @@ class _ActualDataBarChart extends StatelessWidget {
                           child: Align(
                             alignment: Alignment.bottomCenter,
                             child: FractionallySizedBox(
-                              heightFactor: ((row[valueColumn] as num? ?? 0)
-                                          .toDouble()
-                                          .abs() /
-                                      maximum)
-                                  .clamp(0.04, 1),
+                              heightFactor:
+                                  ((row[valueColumn] as num? ?? 0)
+                                              .toDouble()
+                                              .abs() /
+                                          maximum)
+                                      .clamp(0.04, 1),
                               widthFactor: 0.75,
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primaryContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
                                   borderRadius: const BorderRadius.vertical(
                                     top: Radius.circular(4),
                                   ),
@@ -1039,117 +1095,129 @@ class _CustomerDebtPanelState extends State<_CustomerDebtPanel> {
   }
 
   void reload() => setState(() {
-        future = widget.state.commercial.listCustomerAccounts(widget.user);
-      });
+    future = widget.state.commercial.listCustomerAccounts(widget.user);
+  });
 
   @override
-  Widget build(BuildContext context) => FutureBuilder<List<Map<String, Object?>>>(
-        future: future,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) return _ErrorCard(snapshot.error!);
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final accounts = snapshot.data!;
-          if (accounts.isEmpty) {
-            return const _EmptyState(
-              icon: Icons.account_balance_wallet_outlined,
-              message: 'No customer accounts are available in this branch.',
-            );
-          }
-          return Card(
-            child: SingleChildScrollView(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: const [
-                    DataColumn(label: Text('Customer')),
-                    DataColumn(label: Text('Balance'), numeric: true),
-                    DataColumn(label: Text('Overdue'), numeric: true),
-                    DataColumn(label: Text('Credit limit'), numeric: true),
-                    DataColumn(label: Text('Credit status')),
-                    DataColumn(label: Text('Actions')),
-                  ],
-                  rows: accounts.map((account) {
+  Widget build(
+    BuildContext context,
+  ) => FutureBuilder<List<Map<String, Object?>>>(
+    future: future,
+    builder: (context, snapshot) {
+      if (snapshot.hasError) return _ErrorCard(snapshot.error!);
+      if (!snapshot.hasData) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      final accounts = snapshot.data!;
+      if (accounts.isEmpty) {
+        return const _EmptyState(
+          icon: Icons.account_balance_wallet_outlined,
+          message: 'No customer accounts are available in this branch.',
+        );
+      }
+      return Card(
+        child: SingleChildScrollView(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columns: const [
+                DataColumn(label: Text('Customer')),
+                DataColumn(label: Text('Balance'), numeric: true),
+                DataColumn(label: Text('Overdue'), numeric: true),
+                DataColumn(label: Text('Credit limit'), numeric: true),
+                DataColumn(label: Text('Credit status')),
+                DataColumn(label: Text('Actions')),
+              ],
+              rows: accounts
+                  .map((account) {
                     final enabled =
                         (account['credit_enabled'] as num? ?? 1).toInt() == 1;
-                    final balance =
-                        (account['balance'] as num? ?? 0).toDouble();
-                    final overdue =
-                        (account['overdue_balance'] as num? ?? 0).toDouble();
-                    return DataRow(cells: [
-                      DataCell(
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('${account['name']}'),
-                            if ('${account['phone'] ?? ''}'.isNotEmpty)
-                              Text(
-                                '${account['phone']}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                          ],
-                        ),
-                      ),
-                      DataCell(Text(AppFormatters.money(balance))),
-                      DataCell(
-                        Text(
-                          AppFormatters.money(overdue),
-                          style: TextStyle(
-                            color: overdue > 0
-                                ? Theme.of(context).colorScheme.error
-                                : null,
-                            fontWeight: overdue > 0 ? FontWeight.w700 : null,
+                    final balance = (account['balance'] as num? ?? 0)
+                        .toDouble();
+                    final overdue = (account['overdue_balance'] as num? ?? 0)
+                        .toDouble();
+                    return DataRow(
+                      cells: [
+                        DataCell(
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${account['name']}'),
+                              if ('${account['phone'] ?? ''}'.isNotEmpty)
+                                Text(
+                                  '${account['phone']}',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                            ],
                           ),
                         ),
-                      ),
-                      DataCell(
-                        Text(
-                          AppFormatters.money(
-                            (account['credit_limit'] as num? ?? 0).toDouble(),
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        Chip(
-                          avatar: Icon(
-                            enabled ? Icons.check_circle_outline : Icons.block,
-                            size: 17,
-                          ),
-                          label: Text(enabled ? 'Enabled' : 'Blocked'),
-                        ),
-                      ),
-                      DataCell(
-                        Wrap(
-                          spacing: 4,
-                          children: [
-                            if (widget.user.can(CommercialPermission.debtPayment))
-                              TextButton(
-                                onPressed: () => _credit(context, account),
-                                child: const Text('Credit'),
-                              ),
-                            if (balance > 0 &&
-                                widget.user.can(CommercialPermission.debtPayment))
-                              TextButton(
-                                onPressed: () => _payment(context, account),
-                                child: const Text('Payment'),
-                              ),
-                            TextButton(
-                              onPressed: () => _statement(context, account),
-                              child: const Text('Statement'),
+                        DataCell(Text(AppFormatters.money(balance))),
+                        DataCell(
+                          Text(
+                            AppFormatters.money(overdue),
+                            style: TextStyle(
+                              color: overdue > 0
+                                  ? Theme.of(context).colorScheme.error
+                                  : null,
+                              fontWeight: overdue > 0 ? FontWeight.w700 : null,
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ]);
-                  }).toList(growable: false),
-                ),
-              ),
+                        DataCell(
+                          Text(
+                            AppFormatters.money(
+                              (account['credit_limit'] as num? ?? 0).toDouble(),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Chip(
+                            avatar: Icon(
+                              enabled
+                                  ? Icons.check_circle_outline
+                                  : Icons.block,
+                              size: 17,
+                            ),
+                            label: Text(enabled ? 'Enabled' : 'Blocked'),
+                          ),
+                        ),
+                        DataCell(
+                          Wrap(
+                            spacing: 4,
+                            children: [
+                              if (widget.user.can(
+                                CommercialPermission.debtPayment,
+                              ))
+                                TextButton(
+                                  onPressed: () => _credit(context, account),
+                                  child: const Text('Credit'),
+                                ),
+                              if (balance > 0 &&
+                                  widget.user.can(
+                                    CommercialPermission.debtPayment,
+                                  ))
+                                TextButton(
+                                  onPressed: () => _payment(context, account),
+                                  child: const Text('Payment'),
+                                ),
+                              TextButton(
+                                onPressed: () => _statement(context, account),
+                                child: const Text('Statement'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  })
+                  .toList(growable: false),
             ),
-          );
-        },
+          ),
+        ),
       );
+    },
+  );
 
   Future<void> _credit(
     BuildContext context,
@@ -1178,7 +1246,9 @@ class _CustomerDebtPanelState extends State<_CustomerDebtPanel> {
                 ),
                 TextField(
                   controller: limit,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(labelText: 'Credit limit'),
                 ),
                 const SizedBox(height: 10),
@@ -1247,7 +1317,9 @@ class _CustomerDebtPanelState extends State<_CustomerDebtPanel> {
               children: [
                 TextField(
                   controller: amount,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Amount',
                     helperText:
@@ -1258,14 +1330,16 @@ class _CustomerDebtPanelState extends State<_CustomerDebtPanel> {
                 DropdownButtonFormField<String>(
                   initialValue: method,
                   items: const ['Bank', 'Cash', 'Mobile Money', 'Card']
-                      .map((value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value),
-                          ))
+                      .map(
+                        (value) =>
+                            DropdownMenuItem(value: value, child: Text(value)),
+                      )
                       .toList(),
                   onChanged: (value) =>
                       setDialogState(() => method = value ?? method),
-                  decoration: const InputDecoration(labelText: 'Payment method'),
+                  decoration: const InputDecoration(
+                    labelText: 'Payment method',
+                  ),
                 ),
                 const SizedBox(height: 10),
                 TextField(
@@ -1291,7 +1365,8 @@ class _CustomerDebtPanelState extends State<_CustomerDebtPanel> {
     if (accepted != true) return;
     final parsed = double.tryParse(amount.text.trim());
     if (parsed == null || parsed <= 0) {
-      if (context.mounted) showFailure(context, 'Enter a valid payment amount.');
+      if (context.mounted)
+        showFailure(context, 'Enter a valid payment amount.');
       return;
     }
     try {
@@ -1302,7 +1377,7 @@ class _CustomerDebtPanelState extends State<_CustomerDebtPanel> {
         paymentMethod: method,
         reference: reference.text.trim(),
         cashSessionId: method == 'Cash'
-            ? widget.state.currentCashSession?['id'] as int?
+            ? (widget.state.currentCashSession?['id'] as int?)
             : null,
       );
       await widget.state.refreshAll();
@@ -1326,11 +1401,12 @@ class _CustomerDebtPanelState extends State<_CustomerDebtPanel> {
         pageFormats: const {'A4': PdfPageFormat.a4},
         canChangeOrientation: false,
         canChangePageFormat: false,
-        buildPdf: (_) => widget.state.commercialDocuments.buildCustomerStatementPdf(
-          customerId: account['id'] as int,
-          branchId: widget.user.branchId,
-          settings: widget.state.settings,
-        ),
+        buildPdf: (_) =>
+            widget.state.commercialDocuments.buildCustomerStatementPdf(
+              customerId: account['id'] as int,
+              branchId: widget.user.branchId,
+              settings: widget.state.settings,
+            ),
       ),
     );
   }
@@ -1353,54 +1429,71 @@ class _PurchasingPanelState extends State<_PurchasingPanel> {
     future = widget.state.commercial.listPurchaseOrders(widget.user);
   }
 
-  void reload() => setState(() => future = widget.state.commercial.listPurchaseOrders(widget.user));
+  void reload() => setState(
+    () => future = widget.state.commercial.listPurchaseOrders(widget.user),
+  );
 
   @override
   Widget build(BuildContext context) => Column(
-        children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              onPressed: () => _create(context),
-              icon: const Icon(Icons.add_shopping_cart),
-              label: const Text('New purchase order'),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: FutureBuilder<List<Map<String, Object?>>>(
-              future: future,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) return _ErrorCard(snapshot.error!);
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                if (snapshot.data!.isEmpty) {
-                  return const _EmptyState(icon: Icons.shopping_cart_outlined, message: 'No purchase orders yet.');
-                }
-                return ListView.builder(
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    final order = snapshot.data![index];
-                    return Card(
-                      child: ListTile(
-                        title: Text('${order['po_no']} • ${order['supplier_name']}'),
-                        subtitle: Text('${order['status']} • ${AppFormatters.money((order['total'] as num).toDouble())} • Balance ${AppFormatters.money((order['balance_due'] as num).toDouble())}'),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (value) => _action(context, order, value),
-                          itemBuilder: (_) => [
-                            if (order['status'] != 'received' && order['status'] != 'cancelled')
-                              const PopupMenuItem(value: 'receive', child: Text('Receive outstanding stock')),
-                            const PopupMenuItem(value: 'pay', child: Text('Record supplier payment')),
-                          ],
+    children: [
+      Align(
+        alignment: Alignment.centerRight,
+        child: FilledButton.icon(
+          onPressed: () => _create(context),
+          icon: const Icon(Icons.add_shopping_cart),
+          label: const Text('New purchase order'),
+        ),
+      ),
+      const SizedBox(height: 10),
+      Expanded(
+        child: FutureBuilder<List<Map<String, Object?>>>(
+          future: future,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) return _ErrorCard(snapshot.error!);
+            if (!snapshot.hasData)
+              return const Center(child: CircularProgressIndicator());
+            if (snapshot.data!.isEmpty) {
+              return const _EmptyState(
+                icon: Icons.shopping_cart_outlined,
+                message: 'No purchase orders yet.',
+              );
+            }
+            return ListView.builder(
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                final order = snapshot.data![index];
+                return Card(
+                  child: ListTile(
+                    title: Text(
+                      '${order['po_no']} • ${order['supplier_name']}',
+                    ),
+                    subtitle: Text(
+                      '${order['status']} • ${AppFormatters.money((order['total'] as num).toDouble())} • Balance ${AppFormatters.money((order['balance_due'] as num).toDouble())}',
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) => _action(context, order, value),
+                      itemBuilder: (_) => [
+                        if (order['status'] != 'received' &&
+                            order['status'] != 'cancelled')
+                          const PopupMenuItem(
+                            value: 'receive',
+                            child: Text('Receive outstanding stock'),
+                          ),
+                        const PopupMenuItem(
+                          value: 'pay',
+                          child: Text('Record supplier payment'),
                         ),
-                      ),
-                    );
-                  },
+                      ],
+                    ),
+                  ),
                 );
               },
-            ),
-          ),
-        ],
-      );
+            );
+          },
+        ),
+      ),
+    ],
+  );
 
   Future<void> _create(BuildContext context) async {
     if (widget.state.suppliers.isEmpty || widget.state.products.isEmpty) {
@@ -1434,14 +1527,23 @@ class _PurchasingPanelState extends State<_PurchasingPanel> {
     }
   }
 
-  Future<void> _action(BuildContext context, Map<String, Object?> order, String action) async {
+  Future<void> _action(
+    BuildContext context,
+    Map<String, Object?> order,
+    String action,
+  ) async {
     try {
       final id = order['id'] as int;
       if (action == 'receive') {
-        final items = await widget.state.commercial.purchaseOrderItems(actor: widget.user, purchaseOrderId: id);
+        final items = await widget.state.commercial.purchaseOrderItems(
+          actor: widget.user,
+          purchaseOrderId: id,
+        );
         final quantities = <int, double>{};
         for (final item in items) {
-          final outstanding = (item['ordered_qty'] as num).toDouble() - (item['received_qty'] as num).toDouble();
+          final outstanding =
+              (item['ordered_qty'] as num).toDouble() -
+              (item['received_qty'] as num).toDouble();
           if (outstanding > 0) quantities[item['id'] as int] = outstanding;
         }
         await widget.state.commercial.receivePurchaseOrder(
@@ -1457,7 +1559,9 @@ class _PurchasingPanelState extends State<_PurchasingPanel> {
           supplierId: order['supplier_id'] as int,
           purchaseOrderId: id,
           amount: amount,
-          paymentMethod: widget.state.currentCashSession == null ? 'Bank' : 'Cash',
+          paymentMethod: widget.state.currentCashSession == null
+              ? 'Bank'
+              : 'Cash',
           reference: '',
           cashSessionId: widget.state.currentCashSession?['id'] as int?,
         );
@@ -1479,59 +1583,73 @@ class _InventoryPanel extends StatelessWidget {
   final StaffUser user;
 
   @override
-  Widget build(BuildContext context) => FutureBuilder<List<Map<String, Object?>>>(
-        future: user.can(CommercialPermission.reportsView)
-            ? state.commercial.lowStockSuggestions(user)
-            : Future.value(const []),
-        builder: (context, snapshot) => ListView(
+  Widget build(
+    BuildContext context,
+  ) => FutureBuilder<List<Map<String, Object?>>>(
+    future: user.can(CommercialPermission.reportsView)
+        ? state.commercial.lowStockSuggestions(user)
+        : Future.value(const []),
+    builder: (context, snapshot) => ListView(
+      children: [
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
           children: [
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                if (user.can(CommercialPermission.stockAdjust))
-                  _ActionCard(
-                    icon: Icons.tune,
-                    title: 'Stock adjustment',
-                    subtitle: 'Record damaged, expired, missing or corrected stock.',
-                    onPressed: () => _adjust(context),
-                  ),
-                if (user.can(CommercialPermission.stockCount))
-                  _ActionCard(
-                    icon: Icons.fact_check_outlined,
-                    title: 'Physical stock count',
-                    subtitle: 'Freeze expected quantities, count and approve discrepancies.',
-                    onPressed: () => _count(context),
-                  ),
-                _ActionCard(
-                  icon: Icons.qr_code_2,
-                  title: 'Barcode labels',
-                  subtitle: 'Generate printable Code 128, EAN or UPC labels.',
-                  onPressed: () => _labels(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text('Low-stock purchasing suggestions', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            if (snapshot.hasError) _ErrorCard(snapshot.error!),
-            if (!snapshot.hasData) const Center(child: CircularProgressIndicator()),
-            for (final item in snapshot.data ?? const <Map<String, Object?>>[])
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.inventory_2_outlined),
-                  title: Text(item['name'] as String),
-                  subtitle: Text('Stock ${item['stock_qty']} • Reorder level ${item['low_stock_level']}'),
-                  trailing: Text('Suggested ${item['suggested_quantity']}'),
-                ),
+            if (user.can(CommercialPermission.stockAdjust))
+              _ActionCard(
+                icon: Icons.tune,
+                title: 'Stock adjustment',
+                subtitle:
+                    'Record damaged, expired, missing or corrected stock.',
+                onPressed: () => _adjust(context),
               ),
+            if (user.can(CommercialPermission.stockCount))
+              _ActionCard(
+                icon: Icons.fact_check_outlined,
+                title: 'Physical stock count',
+                subtitle:
+                    'Freeze expected quantities, count and approve discrepancies.',
+                onPressed: () => _count(context),
+              ),
+            _ActionCard(
+              icon: Icons.qr_code_2,
+              title: 'Barcode labels',
+              subtitle: 'Generate printable Code 128, EAN or UPC labels.',
+              onPressed: () => _labels(context),
+            ),
           ],
         ),
-      );
+        const SizedBox(height: 16),
+        Text(
+          'Low-stock purchasing suggestions',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        if (snapshot.hasError) _ErrorCard(snapshot.error!),
+        if (!snapshot.hasData) const Center(child: CircularProgressIndicator()),
+        for (final item in snapshot.data ?? const <Map<String, Object?>>[])
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.inventory_2_outlined),
+              title: Text(item['name'] as String),
+              subtitle: Text(
+                'Stock ${item['stock_qty']} • Reorder level ${item['low_stock_level']}',
+              ),
+              trailing: Text('Suggested ${item['suggested_quantity']}'),
+            ),
+          ),
+      ],
+    ),
+  );
 
   Future<void> _adjust(BuildContext context) async {
     if (state.products.isEmpty) return;
-    final amount = await _askNumber(context, 'Quantity change (use negative to reduce)');
+    final amount = await _askNumber(
+      context,
+      'Quantity change (use negative to reduce)',
+    );
     if (amount == null) return;
     try {
       await state.commercial.adjustStock(
@@ -1550,8 +1668,14 @@ class _InventoryPanel extends StatelessWidget {
 
   Future<void> _count(BuildContext context) async {
     try {
-      final id = await state.commercial.startStockCount(actor: user, notes: 'Physical count');
-      final items = await state.commercial.stockCountItems(actor: user, stockCountId: id);
+      final id = await state.commercial.startStockCount(
+        actor: user,
+        notes: 'Physical count',
+      );
+      final items = await state.commercial.stockCountItems(
+        actor: user,
+        stockCountId: id,
+      );
       for (final item in items) {
         await state.commercial.saveStockCountQuantity(
           actor: user,
@@ -1562,7 +1686,11 @@ class _InventoryPanel extends StatelessWidget {
       }
       await state.commercial.approveStockCount(actor: user, stockCountId: id);
       await state.refreshAll();
-      if (context.mounted) showSuccess(context, 'Stock count created and approved with current quantities.');
+      if (context.mounted)
+        showSuccess(
+          context,
+          'Stock count created and approved with current quantities.',
+        );
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -1574,7 +1702,8 @@ class _InventoryPanel extends StatelessWidget {
       context: context,
       builder: (_) => AppPdfPreviewDialog(
         title: 'Barcode labels',
-        buildPdf: (_) => state.buildBarcodeLabels(state.products.take(30).toList()),
+        buildPdf: (_) =>
+            state.buildBarcodeLabels(state.products.take(30).toList()),
         fileName: 'barcode-labels.pdf',
         initialPageFormat: PdfPageFormat.a4,
         pageFormats: const {'A4': PdfPageFormat.a4},
@@ -1609,14 +1738,26 @@ class _CashReturnsPanelState extends State<_CashReturnsPanel> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(session == null ? 'No open cash session' : 'Cash session is open', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-                      Text(session == null ? 'Open a shift before accepting cash.' : 'Opening float: ${AppFormatters.money((session['opening_float'] as num).toDouble())}'),
+                      Text(
+                        session == null
+                            ? 'No open cash session'
+                            : 'Cash session is open',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      Text(
+                        session == null
+                            ? 'Open a shift before accepting cash.'
+                            : 'Opening float: ${AppFormatters.money((session['opening_float'] as num).toDouble())}',
+                      ),
                     ],
                   ),
                 ),
                 if (widget.user.can(CommercialPermission.cashManage))
                   FilledButton(
-                    onPressed: session == null ? () => _open(context) : () => _close(context),
+                    onPressed: session == null
+                        ? () => _open(context)
+                        : () => _close(context),
                     child: Text(session == null ? 'Open shift' : 'Close shift'),
                   ),
               ],
@@ -1628,7 +1769,8 @@ class _CashReturnsPanelState extends State<_CashReturnsPanel> {
           _ActionCard(
             icon: Icons.assignment_return_outlined,
             title: 'Return and refund',
-            subtitle: 'Return full or partial quantities and restore sale-linked stock.',
+            subtitle:
+                'Return full or partial quantities and restore sale-linked stock.',
             onPressed: () => _return(context),
           ),
       ],
@@ -1639,8 +1781,11 @@ class _CashReturnsPanelState extends State<_CashReturnsPanel> {
     final float = await _askNumber(context, 'Opening cash float');
     if (float == null) return;
     try {
-      final registers = await widget.state.commercial.listCashRegisters(widget.user);
-      if (registers.isEmpty) throw StateError('No cash register is configured.');
+      final registers = await widget.state.commercial.listCashRegisters(
+        widget.user,
+      );
+      if (registers.isEmpty)
+        throw StateError('No cash register is configured.');
       await widget.state.commercial.openCashSession(
         actor: widget.user,
         registerId: registers.first['id'] as int,
@@ -1664,7 +1809,11 @@ class _CashReturnsPanelState extends State<_CashReturnsPanel> {
         note: '',
       );
       await widget.state.refreshAll();
-      if (mounted) showSuccess(context, 'Shift closed. Variance: ${AppFormatters.money(result['variance']!)}');
+      if (mounted)
+        showSuccess(
+          context,
+          'Shift closed. Variance: ${AppFormatters.money(result['variance']!)}',
+        );
     } catch (error) {
       if (mounted) showFailure(context, error);
     }
@@ -1678,7 +1827,10 @@ class _CashReturnsPanelState extends State<_CashReturnsPanel> {
     }
     try {
       final sale = completed.first;
-      final items = await widget.state.commercial.returnableSaleItems(actor: widget.user, saleId: sale.id!);
+      final items = await widget.state.commercial.returnableSaleItems(
+        actor: widget.user,
+        saleId: sale.id!,
+      );
       final item = items.cast<Map<String, Object?>>().firstWhere(
         (row) => (row['returnable_quantity'] as num).toDouble() > 0,
       );
@@ -1688,7 +1840,9 @@ class _CashReturnsPanelState extends State<_CashReturnsPanel> {
         actor: widget.user,
         saleId: sale.id!,
         quantitiesBySaleItemId: {item['id'] as int: quantity},
-        refundMethod: widget.state.currentCashSession == null ? 'Store credit' : 'Cash',
+        refundMethod: widget.state.currentCashSession == null
+            ? 'Store credit'
+            : 'Cash',
         reason: 'Customer return',
         restock: true,
         cashSessionId: widget.state.currentCashSession?['id'] as int?,
@@ -1708,255 +1862,274 @@ class _StaffBranchesPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
+    children: [
+      Wrap(
+        spacing: 12,
+        runSpacing: 12,
         children: [
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              if (user.can(CommercialPermission.staffManage))
-                _ActionCard(
-                  icon: Icons.person_add_alt_1,
-                  title: 'Add staff account',
-                  subtitle: 'Assign a secure role and branch.',
-                  onPressed: () => _addStaff(context),
-                ),
-              if (user.can(CommercialPermission.branchesManage))
-                _ActionCard(
-                  icon: Icons.add_business_outlined,
-                  title: 'Add branch',
-                  subtitle: 'Create separate inventory, staff and cash register.',
-                  onPressed: () => _addBranch(context),
-                ),
-              if (user.can(CommercialPermission.branchesManage))
-                _ActionCard(
-                  icon: Icons.swap_horiz,
-                  title: 'Transfer stock',
-                  subtitle: 'Dispatch stock to another branch and receive it once.',
-                  onPressed: () => _createTransfer(context),
-                ),
-            ],
+          if (user.can(CommercialPermission.staffManage))
+            _ActionCard(
+              icon: Icons.person_add_alt_1,
+              title: 'Add staff account',
+              subtitle: 'Assign a secure role and branch.',
+              onPressed: () => _addStaff(context),
+            ),
+          if (user.can(CommercialPermission.branchesManage))
+            _ActionCard(
+              icon: Icons.add_business_outlined,
+              title: 'Add branch',
+              subtitle: 'Create separate inventory, staff and cash register.',
+              onPressed: () => _addBranch(context),
+            ),
+          if (user.can(CommercialPermission.branchesManage))
+            _ActionCard(
+              icon: Icons.swap_horiz,
+              title: 'Transfer stock',
+              subtitle: 'Dispatch stock to another branch and receive it once.',
+              onPressed: () => _createTransfer(context),
+            ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      Text(
+        'Branches',
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+      ),
+      for (final branch in state.branches)
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.store_outlined),
+            title: Text(branch.name),
+            subtitle: Text(
+              '${branch.code} • ${branch.address} • '
+              '${branch.isActive ? 'Active' : 'Disabled'}',
+            ),
+            trailing: user.can(CommercialPermission.branchesManage)
+                ? PopupMenuButton<String>(
+                    onSelected: (action) =>
+                        _branchAction(context, branch, action),
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text('Edit branch'),
+                      ),
+                      PopupMenuItem(
+                        value: branch.isActive ? 'disable' : 'enable',
+                        child: Text(
+                          branch.isActive
+                              ? 'Disable branch'
+                              : 'Reactivate branch',
+                        ),
+                      ),
+                    ],
+                  )
+                : null,
           ),
-          const SizedBox(height: 16),
-          Text('Branches', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-          for (final branch in state.branches)
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.store_outlined),
-                title: Text(branch.name),
-                subtitle: Text(
-                  '${branch.code} • ${branch.address} • '
-                  '${branch.isActive ? 'Active' : 'Disabled'}',
-                ),
-                trailing: user.can(CommercialPermission.branchesManage)
-                    ? PopupMenuButton<String>(
+        ),
+      if (user.can(CommercialPermission.branchesManage)) ...[
+        const SizedBox(height: 16),
+        Text(
+          'Stock transfers',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        FutureBuilder<List<Map<String, Object?>>>(
+          future: state.commercial.listStockTransfers(user),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) return _ErrorCard(snapshot.error!);
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.data!.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('No branch stock transfers yet.'),
+              );
+            }
+            return Column(
+              children: [
+                for (final transfer in snapshot.data!)
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.local_shipping_outlined),
+                      title: Text(
+                        '${transfer['transfer_no']} • ${transfer['source_branch_name']} → ${transfer['destination_branch_name']}',
+                      ),
+                      subtitle: Text(
+                        '${transfer['status']} • ${transfer['notes'] ?? ''}',
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        tooltip: 'Transfer actions',
                         onSelected: (action) =>
-                            _branchAction(context, branch, action),
+                            _transferAction(context, transfer, action),
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: 'details',
+                            child: Text('View quantities and history'),
+                          ),
+                          if (transfer['status'] == 'draft' &&
+                              transfer['source_branch_id'] == user.branchId &&
+                              user.can(
+                                CommercialPermission.stockTransferApprove,
+                              ))
+                            const PopupMenuItem(
+                              value: 'approve',
+                              child: Text('Approve'),
+                            ),
+                          if (transfer['status'] == 'draft' &&
+                              user.can(
+                                CommercialPermission.stockTransferApprove,
+                              ))
+                            const PopupMenuItem(
+                              value: 'reject',
+                              child: Text('Reject'),
+                            ),
+                          if ({
+                                'draft',
+                                'approved',
+                              }.contains(transfer['status']) &&
+                              transfer['source_branch_id'] == user.branchId &&
+                              user.can(
+                                CommercialPermission.stockTransferApprove,
+                              ))
+                            const PopupMenuItem(
+                              value: 'cancel',
+                              child: Text('Cancel'),
+                            ),
+                          if (transfer['status'] == 'approved' &&
+                              transfer['source_branch_id'] == user.branchId &&
+                              user.can(
+                                CommercialPermission.stockTransferApprove,
+                              ))
+                            const PopupMenuItem(
+                              value: 'dispatch',
+                              child: Text('Dispatch'),
+                            ),
+                          if ({
+                                'dispatched',
+                                'partially_received',
+                              }.contains(transfer['status']) &&
+                              transfer['destination_branch_id'] ==
+                                  user.branchId &&
+                              user.can(
+                                CommercialPermission.stockTransferReceive,
+                              ))
+                            const PopupMenuItem(
+                              value: 'receive',
+                              child: Text('Receive / discrepancy'),
+                            ),
+                          if (transfer['status'] == 'completed' &&
+                              transfer['source_branch_id'] == user.branchId &&
+                              user.can(
+                                CommercialPermission.stockTransferApprove,
+                              ))
+                            const PopupMenuItem(
+                              value: 'reverse',
+                              child: Text('Controlled reversal'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+      if (user.can(CommercialPermission.staffManage)) ...[
+        const SizedBox(height: 16),
+        FutureBuilder<List<StaffUser>>(
+          future: state.commercial.listStaff(user),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) return _ErrorCard(snapshot.error!);
+            if (!snapshot.hasData)
+              return const Center(child: CircularProgressIndicator());
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Staff',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                for (final staff in snapshot.data!)
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.badge_outlined),
+                      title: Text(staff.name),
+                      subtitle: Text(
+                        '${staff.role.label} • ${staff.username} • '
+                        '${staff.isActive ? 'Active' : 'Disabled'}'
+                        '${staff.lockedUntil != null ? ' • Locked' : ''}\n'
+                        'Last login: ${staff.lastLoginAt ?? 'Never'}',
+                      ),
+                      isThreeLine: true,
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (action) =>
+                            _staffAction(context, staff, action),
                         itemBuilder: (_) => [
                           const PopupMenuItem(
                             value: 'edit',
-                            child: Text('Edit branch'),
+                            child: Text('Edit role and branch'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'branches',
+                            child: Text('Assign branches'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'reset_pin',
+                            child: Text('Reset PIN'),
                           ),
                           PopupMenuItem(
-                            value: branch.isActive ? 'disable' : 'enable',
+                            value: staff.isActive ? 'disable' : 'enable',
                             child: Text(
-                              branch.isActive
-                                  ? 'Disable branch'
-                                  : 'Reactivate branch',
+                              staff.isActive ? 'Disable' : 'Reactivate',
                             ),
                           ),
+                          PopupMenuItem(
+                            value: staff.lockedUntil == null
+                                ? 'lock'
+                                : 'unlock',
+                            child: Text(
+                              staff.lockedUntil == null
+                                  ? 'Lock account'
+                                  : 'Unlock account',
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'sessions',
+                            child: Text('Session history'),
+                          ),
+                          if (user.can(CommercialPermission.auditView))
+                            const PopupMenuItem(
+                              value: 'audit',
+                              child: Text('Audit history'),
+                            ),
                         ],
-                      )
-                    : null,
-              ),
-            ),
-          if (user.can(CommercialPermission.branchesManage)) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Stock transfers',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
-            ),
-            FutureBuilder<List<Map<String, Object?>>>(
-              future: state.commercial.listStockTransfers(user),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) return _ErrorCard(snapshot.error!);
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.data!.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text('No branch stock transfers yet.'),
-                  );
-                }
-                return Column(
-                  children: [
-                    for (final transfer in snapshot.data!)
-                      Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.local_shipping_outlined),
-                          title: Text(
-                            '${transfer['transfer_no']} • ${transfer['source_branch_name']} → ${transfer['destination_branch_name']}',
-                          ),
-                          subtitle: Text('${transfer['status']} • ${transfer['notes'] ?? ''}'),
-                          trailing: PopupMenuButton<String>(
-                            tooltip: 'Transfer actions',
-                            onSelected: (action) =>
-                                _transferAction(context, transfer, action),
-                            itemBuilder: (_) => [
-                              const PopupMenuItem(
-                                value: 'details',
-                                child: Text('View quantities and history'),
-                              ),
-                              if (transfer['status'] == 'draft' &&
-                                  transfer['source_branch_id'] == user.branchId &&
-                                  user.can(
-                                    CommercialPermission.stockTransferApprove,
-                                  ))
-                                const PopupMenuItem(
-                                  value: 'approve',
-                                  child: Text('Approve'),
-                                ),
-                              if (transfer['status'] == 'draft' &&
-                                  user.can(
-                                    CommercialPermission.stockTransferApprove,
-                                  ))
-                                const PopupMenuItem(
-                                  value: 'reject',
-                                  child: Text('Reject'),
-                                ),
-                              if ({'draft', 'approved'}
-                                      .contains(transfer['status']) &&
-                                  transfer['source_branch_id'] == user.branchId &&
-                                  user.can(
-                                    CommercialPermission.stockTransferApprove,
-                                  ))
-                                const PopupMenuItem(
-                                  value: 'cancel',
-                                  child: Text('Cancel'),
-                                ),
-                              if (transfer['status'] == 'approved' &&
-                                  transfer['source_branch_id'] == user.branchId &&
-                                  user.can(
-                                    CommercialPermission.stockTransferApprove,
-                                  ))
-                                const PopupMenuItem(
-                                  value: 'dispatch',
-                                  child: Text('Dispatch'),
-                                ),
-                              if ({'dispatched', 'partially_received'}
-                                      .contains(transfer['status']) &&
-                                  transfer['destination_branch_id'] ==
-                                      user.branchId &&
-                                  user.can(
-                                    CommercialPermission.stockTransferReceive,
-                                  ))
-                                const PopupMenuItem(
-                                  value: 'receive',
-                                  child: Text('Receive / discrepancy'),
-                                ),
-                              if (transfer['status'] == 'completed' &&
-                                  transfer['source_branch_id'] == user.branchId &&
-                                  user.can(
-                                    CommercialPermission.stockTransferApprove,
-                                  ))
-                                const PopupMenuItem(
-                                  value: 'reverse',
-                                  child: Text('Controlled reversal'),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
-          ],
-          if (user.can(CommercialPermission.staffManage)) ...[
-            const SizedBox(height: 16),
-            FutureBuilder<List<StaffUser>>(
-              future: state.commercial.listStaff(user),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) return _ErrorCard(snapshot.error!);
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text('Staff', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-                    for (final staff in snapshot.data!)
-                      Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.badge_outlined),
-                          title: Text(staff.name),
-                          subtitle: Text(
-                            '${staff.role.label} • ${staff.username} • '
-                            '${staff.isActive ? 'Active' : 'Disabled'}'
-                            '${staff.lockedUntil != null ? ' • Locked' : ''}
-'
-                            'Last login: ${staff.lastLoginAt ?? 'Never'}',
-                          ),
-                          isThreeLine: true,
-                          trailing: PopupMenuButton<String>(
-                            onSelected: (action) =>
-                                _staffAction(context, staff, action),
-                            itemBuilder: (_) => [
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: Text('Edit role and branch'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'branches',
-                                child: Text('Assign branches'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'reset_pin',
-                                child: Text('Reset PIN'),
-                              ),
-                              PopupMenuItem(
-                                value: staff.isActive ? 'disable' : 'enable',
-                                child: Text(
-                                  staff.isActive ? 'Disable' : 'Reactivate',
-                                ),
-                              ),
-                              PopupMenuItem(
-                                value: staff.lockedUntil == null
-                                    ? 'lock'
-                                    : 'unlock',
-                                child: Text(
-                                  staff.lockedUntil == null
-                                      ? 'Lock account'
-                                      : 'Unlock account',
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'sessions',
-                                child: Text('Session history'),
-                              ),
-                              if (user.can(CommercialPermission.auditView))
-                                const PopupMenuItem(
-                                  value: 'audit',
-                                  child: Text('Audit history'),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ],
-      );
+              ],
+            );
+          },
+        ),
+      ],
+    ],
+  );
 
   Future<void> _createTransfer(BuildContext context) async {
     final destinations = state.branches
         .where((branch) => branch.isActive && branch.id != user.branchId)
         .toList(growable: false);
     if (destinations.isEmpty || state.products.isEmpty) {
-      showFailure(context, 'Add another branch and at least one product first.');
+      showFailure(
+        context,
+        'Add another branch and at least one product first.',
+      );
       return;
     }
     final draft = await showDialog<StockTransferDraftResult>(
@@ -2036,8 +2209,7 @@ class _StaffBranchesPanel extends StatelessWidget {
             transferId: transferId,
             dispatchedByProductId: {
               for (final item in items)
-                item['product_id'] as int:
-                    (item['quantity'] as num).toDouble(),
+                item['product_id'] as int: (item['quantity'] as num).toDouble(),
             },
           );
           break;
@@ -2205,10 +2377,7 @@ class _StaffBranchesPanel extends StatelessWidget {
     }
   }
 
-  Future<void> _editStaff(
-    BuildContext context,
-    StaffUser staff,
-  ) async {
+  Future<void> _editStaff(BuildContext context, StaffUser staff) async {
     final name = TextEditingController(text: staff.name);
     final username = TextEditingController(text: staff.username);
     var role = staff.role;
@@ -2252,8 +2421,9 @@ class _StaffBranchesPanel extends StatelessWidget {
                 const SizedBox(height: 10),
                 DropdownButtonFormField<int>(
                   initialValue: branchId,
-                  decoration:
-                      const InputDecoration(labelText: 'Primary branch'),
+                  decoration: const InputDecoration(
+                    labelText: 'Primary branch',
+                  ),
                   items: [
                     for (final branch in state.branches)
                       if (branch.isActive)
@@ -2306,10 +2476,7 @@ class _StaffBranchesPanel extends StatelessWidget {
     }
   }
 
-  Future<void> _assignBranches(
-    BuildContext context,
-    StaffUser staff,
-  ) async {
+  Future<void> _assignBranches(BuildContext context, StaffUser staff) async {
     final existing = await state.commercial.accessibleBranches(staff);
     final selected = existing.map((branch) => branch.id).toSet();
     if (selected.isEmpty) selected.add(staff.branchId);
@@ -2337,8 +2504,8 @@ class _StaffBranchesPanel extends StatelessWidget {
                         groupValue: primary,
                         onChanged: selected.contains(branch.id)
                             ? (value) => setDialogState(
-                                  () => primary = value ?? primary,
-                                )
+                                () => primary = value ?? primary,
+                              )
                             : null,
                       ),
                       onChanged: (value) => setDialogState(() {
@@ -2380,16 +2547,11 @@ class _StaffBranchesPanel extends StatelessWidget {
     }
   }
 
-  Future<void> _showStaffSessions(
-    BuildContext context,
-    StaffUser staff,
-  ) async {
+  Future<void> _showStaffSessions(BuildContext context, StaffUser staff) async {
     final sessions = (await state.commercial.listStaffSessions(
       actor: user,
       userId: staff.id,
-    ))
-        .map((row) => Map<String, Object?>.from(row))
-        .toList(growable: false);
+    )).map((row) => Map<String, Object?>.from(row)).toList(growable: false);
     if (!context.mounted) return;
     await showDialog<void>(
       context: context,
@@ -2407,9 +2569,7 @@ class _StaffBranchesPanel extends StatelessWidget {
                       final session = sessions[index];
                       final active = session['ended_at'] == null;
                       return ListTile(
-                        leading: Icon(
-                          active ? Icons.login : Icons.logout,
-                        ),
+                        leading: Icon(active ? Icons.login : Icons.logout),
                         title: Text(
                           '${session['branch_name']} • '
                           '${active ? 'Active' : 'Ended'}',
@@ -2426,8 +2586,8 @@ class _StaffBranchesPanel extends StatelessWidget {
                                     sessionId: session['id'] as int,
                                     reason: 'Terminated by administrator',
                                   );
-                                  session['ended_at'] =
-                                      DateTime.now().toIso8601String();
+                                  session['ended_at'] = DateTime.now()
+                                      .toIso8601String();
                                   setDialogState(() {});
                                 },
                                 child: const Text('Terminate'),
@@ -2448,10 +2608,7 @@ class _StaffBranchesPanel extends StatelessWidget {
     );
   }
 
-  Future<void> _showStaffAudit(
-    BuildContext context,
-    StaffUser staff,
-  ) async {
+  Future<void> _showStaffAudit(BuildContext context, StaffUser staff) async {
     final entries = await state.commercial.staffAuditHistory(
       actor: user,
       userId: staff.id,
@@ -2594,24 +2751,47 @@ class _StaffBranchesPanel extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: name, decoration: const InputDecoration(labelText: 'Full name')),
+                TextField(
+                  controller: name,
+                  decoration: const InputDecoration(labelText: 'Full name'),
+                ),
                 const SizedBox(height: 10),
-                TextField(controller: username, decoration: const InputDecoration(labelText: 'Username')),
+                TextField(
+                  controller: username,
+                  decoration: const InputDecoration(labelText: 'Username'),
+                ),
                 const SizedBox(height: 10),
-                TextField(controller: pin, obscureText: true, decoration: const InputDecoration(labelText: 'PIN')),
+                TextField(
+                  controller: pin,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'PIN'),
+                ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<StaffRole>(
                   initialValue: role,
                   decoration: const InputDecoration(labelText: 'Role'),
-                  items: [for (final value in StaffRole.values) if (value != StaffRole.owner) DropdownMenuItem(value: value, child: Text(value.label))],
+                  items: [
+                    for (final value in StaffRole.values)
+                      if (value != StaffRole.owner)
+                        DropdownMenuItem(
+                          value: value,
+                          child: Text(value.label),
+                        ),
+                  ],
                   onChanged: (value) => setState(() => role = value!),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Create')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Create'),
+            ),
           ],
         ),
       ),
@@ -2644,21 +2824,37 @@ class _StaffBranchesPanel extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: name, decoration: const InputDecoration(labelText: 'Branch name')),
+              TextField(
+                controller: name,
+                decoration: const InputDecoration(labelText: 'Branch name'),
+              ),
               const SizedBox(height: 10),
-              TextField(controller: code, decoration: const InputDecoration(labelText: 'Branch code')),
+              TextField(
+                controller: code,
+                decoration: const InputDecoration(labelText: 'Branch code'),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Create')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Create'),
+          ),
         ],
       ),
     );
     if (ok != true) return;
     try {
-      await state.commercial.createBranch(actor: user, name: name.text, code: code.text);
+      await state.commercial.createBranch(
+        actor: user,
+        name: name.text,
+        code: code.text,
+      );
       await state.refreshAll();
       if (context.mounted) showSuccess(context, 'Branch created.');
     } catch (error) {
@@ -2674,36 +2870,82 @@ class _PremiumToolsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
+    children: [
+      Wrap(
+        spacing: 12,
+        runSpacing: 12,
         children: [
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              if (user.can(CommercialPermission.backupsManage)) ...[
-                _ActionCard(icon: Icons.enhanced_encryption_outlined, title: 'Encrypted backup', subtitle: 'Create an AES-GCM protected database backup.', onPressed: () => _backup(context)),
-                _ActionCard(icon: Icons.restore_outlined, title: 'Restore backup', subtitle: 'Verify, restore and roll back safely if integrity checks fail.', onPressed: () => _restore(context)),
-                _ActionCard(icon: Icons.schedule_outlined, title: 'Automatic backup', subtitle: 'Store the encryption password securely and run daily catch-up backups.', onPressed: () => _automaticBackup(context)),
-                _ActionCard(icon: Icons.cloud_upload_outlined, title: 'Cloud backup', subtitle: 'Upload an encrypted backup to an HTTPS WebDAV destination.', onPressed: () => _cloudBackup(context)),
-              ],
-              if (user.can(CommercialPermission.importsManage))
-                _ActionCard(icon: Icons.upload_file_outlined, title: 'Import data', subtitle: 'Import products, customers, suppliers or opening stock from CSV/XLSX.', onPressed: () => _import(context)),
-              if (user.can(CommercialPermission.remoteDashboard))
-                _ActionCard(icon: Icons.phone_android_outlined, title: 'Remote owner dashboard', subtitle: 'Start a read-only, token-protected local network dashboard.', onPressed: () => _remote(context)),
-              if (user.can(CommercialPermission.updatesManage))
-                _ActionCard(icon: Icons.system_update_alt, title: 'Secure update check', subtitle: 'Verify release metadata and SHA-256 before download.', onPressed: () => _updates(context)),
-              if (user.can(CommercialPermission.expensesManage))
-                _ActionCard(icon: Icons.event_repeat_outlined, title: 'Recurring expense', subtitle: 'Schedule rent, utilities, salaries and subscriptions.', onPressed: () => _recurring(context)),
-            ],
-          ),
+          if (user.can(CommercialPermission.backupsManage)) ...[
+            _ActionCard(
+              icon: Icons.enhanced_encryption_outlined,
+              title: 'Encrypted backup',
+              subtitle: 'Create an AES-GCM protected database backup.',
+              onPressed: () => _backup(context),
+            ),
+            _ActionCard(
+              icon: Icons.restore_outlined,
+              title: 'Restore backup',
+              subtitle:
+                  'Verify, restore and roll back safely if integrity checks fail.',
+              onPressed: () => _restore(context),
+            ),
+            _ActionCard(
+              icon: Icons.schedule_outlined,
+              title: 'Automatic backup',
+              subtitle:
+                  'Store the encryption password securely and run daily catch-up backups.',
+              onPressed: () => _automaticBackup(context),
+            ),
+            _ActionCard(
+              icon: Icons.cloud_upload_outlined,
+              title: 'Cloud backup',
+              subtitle:
+                  'Upload an encrypted backup to an HTTPS WebDAV destination.',
+              onPressed: () => _cloudBackup(context),
+            ),
+          ],
+          if (user.can(CommercialPermission.importsManage))
+            _ActionCard(
+              icon: Icons.upload_file_outlined,
+              title: 'Import data',
+              subtitle:
+                  'Import products, customers, suppliers or opening stock from CSV/XLSX.',
+              onPressed: () => _import(context),
+            ),
+          if (user.can(CommercialPermission.remoteDashboard))
+            _ActionCard(
+              icon: Icons.phone_android_outlined,
+              title: 'Remote owner dashboard',
+              subtitle:
+                  'Start a read-only, token-protected local network dashboard.',
+              onPressed: () => _remote(context),
+            ),
+          if (user.can(CommercialPermission.updatesManage))
+            _ActionCard(
+              icon: Icons.system_update_alt,
+              title: 'Secure update check',
+              subtitle: 'Verify release metadata and SHA-256 before download.',
+              onPressed: () => _updates(context),
+            ),
+          if (user.can(CommercialPermission.expensesManage))
+            _ActionCard(
+              icon: Icons.event_repeat_outlined,
+              title: 'Recurring expense',
+              subtitle: 'Schedule rent, utilities, salaries and subscriptions.',
+              onPressed: () => _recurring(context),
+            ),
         ],
-      );
+      ),
+    ],
+  );
 
   Future<void> _backup(BuildContext context) async {
     final password = await _askText(context, 'Backup password', obscure: true);
     if (password == null || password.isEmpty) return;
     try {
       final path = await state.createEncryptedBackup(password);
-      if (context.mounted) showSuccess(context, 'Encrypted backup created: $path');
+      if (context.mounted)
+        showSuccess(context, 'Encrypted backup created: $path');
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -2747,7 +2989,10 @@ class _PremiumToolsPanel extends StatelessWidget {
       if (confirmed != true) return;
       await state.restoreEncryptedBackup(path, password);
       if (context.mounted) {
-        showSuccess(context, 'Backup restored. Sign in using the restored staff account.');
+        showSuccess(
+          context,
+          'Backup restored. Sign in using the restored staff account.',
+        );
       }
     } catch (error) {
       if (context.mounted) showFailure(context, error);
@@ -2793,7 +3038,8 @@ class _PremiumToolsPanel extends StatelessWidget {
         username: username,
         password: password,
       );
-      if (context.mounted) showSuccess(context, 'Encrypted cloud backup uploaded.');
+      if (context.mounted)
+        showSuccess(context, 'Encrypted cloud backup uploaded.');
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -2801,7 +3047,10 @@ class _PremiumToolsPanel extends StatelessWidget {
 
   Future<void> _import(BuildContext context) async {
     try {
-      final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['csv', 'xlsx']);
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv', 'xlsx'],
+      );
       final path = result?.files.single.path;
       if (path == null) return;
       final type = await _chooseImportType(context);
@@ -2826,7 +3075,8 @@ class _PremiumToolsPanel extends StatelessWidget {
   Future<void> _remote(BuildContext context) async {
     try {
       final url = await state.startRemoteDashboard();
-      if (context.mounted) showSuccess(context, 'Remote dashboard started at $url');
+      if (context.mounted)
+        showSuccess(context, 'Remote dashboard started at $url');
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -2837,7 +3087,13 @@ class _PremiumToolsPanel extends StatelessWidget {
     if (text == null || text.isEmpty) return;
     try {
       final info = await state.updates.check(Uri.parse(text));
-      if (context.mounted) showSuccess(context, info.isNewer ? 'Update ${info.availableVersion} is available.' : 'This installation is up to date.');
+      if (context.mounted)
+        showSuccess(
+          context,
+          info.isNewer
+              ? 'Update ${info.availableVersion} is available.'
+              : 'This installation is up to date.',
+        );
     } catch (error) {
       if (context.mounted) showFailure(context, error);
     }
@@ -2870,31 +3126,47 @@ class _AuditPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => FutureBuilder<List<AuditEntry>>(
-        future: state.commercial.listAudit(actor: user),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) return _ErrorCard(snapshot.error!);
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-          if (snapshot.data!.isEmpty) return const _EmptyState(icon: Icons.manage_search_outlined, message: 'No audit entries yet.');
-          return ListView.builder(
-            itemCount: snapshot.data!.length,
-            itemBuilder: (context, index) {
-              final entry = snapshot.data![index];
-              return Card(
-                child: ListTile(
-                  leading: Icon(entry.success ? Icons.check_circle_outline : Icons.error_outline),
-                  title: Text(entry.action.replaceAll('.', ' › ')),
-                  subtitle: Text('${entry.userName ?? 'System'} • ${entry.branchName ?? ''} • ${entry.createdAt.toLocal()}\n${entry.reason}'),
-                  isThreeLine: true,
-                ),
-              );
-            },
+    future: state.commercial.listAudit(actor: user),
+    builder: (context, snapshot) {
+      if (snapshot.hasError) return _ErrorCard(snapshot.error!);
+      if (!snapshot.hasData)
+        return const Center(child: CircularProgressIndicator());
+      if (snapshot.data!.isEmpty)
+        return const _EmptyState(
+          icon: Icons.manage_search_outlined,
+          message: 'No audit entries yet.',
+        );
+      return ListView.builder(
+        itemCount: snapshot.data!.length,
+        itemBuilder: (context, index) {
+          final entry = snapshot.data![index];
+          return Card(
+            child: ListTile(
+              leading: Icon(
+                entry.success
+                    ? Icons.check_circle_outline
+                    : Icons.error_outline,
+              ),
+              title: Text(entry.action.replaceAll('.', ' › ')),
+              subtitle: Text(
+                '${entry.userName ?? 'System'} • ${entry.branchName ?? ''} • ${entry.createdAt.toLocal()}\n${entry.reason}',
+              ),
+              isThreeLine: true,
+            ),
           );
         },
       );
+    },
+  );
 }
 
 class _ActionCard extends StatelessWidget {
-  const _ActionCard({required this.icon, required this.title, required this.subtitle, required this.onPressed});
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onPressed,
+  });
   final IconData icon;
   final String title;
   final String subtitle;
@@ -2902,29 +3174,37 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: 330,
-        child: Card(
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(icon, size: 32),
-                  const SizedBox(height: 14),
-                  Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 5),
-                  Text(subtitle),
-                  const SizedBox(height: 12),
-                  const Align(alignment: Alignment.centerRight, child: Icon(Icons.arrow_forward)),
-                ],
+    width: 330,
+    child: Card(
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 32),
+              const SizedBox(height: 14),
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
-            ),
+              const SizedBox(height: 5),
+              Text(subtitle),
+              const SizedBox(height: 12),
+              const Align(
+                alignment: Alignment.centerRight,
+                child: Icon(Icons.arrow_forward),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _ErrorCard extends StatelessWidget {
@@ -2932,13 +3212,13 @@ class _ErrorCard extends StatelessWidget {
   final Object error;
   @override
   Widget build(BuildContext context) => Center(
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Text(error.toString()),
-          ),
-        ),
-      );
+    child: Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(error.toString()),
+      ),
+    ),
+  );
 }
 
 class _EmptyState extends StatelessWidget {
@@ -2947,11 +3227,15 @@ class _EmptyState extends StatelessWidget {
   final String message;
   @override
   Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [Icon(icon, size: 56), const SizedBox(height: 12), Text(message)],
-        ),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 56),
+        const SizedBox(height: 12),
+        Text(message),
+      ],
+    ),
+  );
 }
 
 Future<double?> _askNumber(BuildContext context, String label) async {
@@ -2963,28 +3247,52 @@ Future<double?> _askNumber(BuildContext context, String label) async {
       content: TextField(
         controller: controller,
         autofocus: true,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+        keyboardType: const TextInputType.numberWithOptions(
+          decimal: true,
+          signed: true,
+        ),
         decoration: InputDecoration(labelText: label),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Continue')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, controller.text),
+          child: const Text('Continue'),
+        ),
       ],
     ),
   );
   return value == null ? null : double.tryParse(value.trim());
 }
 
-Future<String?> _askText(BuildContext context, String label, {bool obscure = false}) {
+Future<String?> _askText(
+  BuildContext context,
+  String label, {
+  bool obscure = false,
+}) {
   final controller = TextEditingController();
   return showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(label),
-      content: TextField(controller: controller, obscureText: obscure, autofocus: true, decoration: InputDecoration(labelText: label)),
+      content: TextField(
+        controller: controller,
+        obscureText: obscure,
+        autofocus: true,
+        decoration: InputDecoration(labelText: label),
+      ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Continue')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, controller.text),
+          child: const Text('Continue'),
+        ),
       ],
     ),
   );
@@ -3026,14 +3334,21 @@ Future<String?> _askRequiredText(
   return value;
 }
 
-
 Future<String?> _chooseImportType(BuildContext context) => showDialog<String>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: const Text('Import data type'),
-        children: [
-          for (final value in const ['products', 'customers', 'suppliers', 'opening_stock'])
-            SimpleDialogOption(onPressed: () => Navigator.pop(context, value), child: Text(value.replaceAll('_', ' '))),
-        ],
-      ),
-    );
+  context: context,
+  builder: (context) => SimpleDialog(
+    title: const Text('Import data type'),
+    children: [
+      for (final value in const [
+        'products',
+        'customers',
+        'suppliers',
+        'opening_stock',
+      ])
+        SimpleDialogOption(
+          onPressed: () => Navigator.pop(context, value),
+          child: Text(value.replaceAll('_', ' ')),
+        ),
+    ],
+  ),
+);

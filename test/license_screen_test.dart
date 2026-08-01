@@ -109,7 +109,9 @@ Future<LicenseController> _controller(FakeLicenseService service) async {
 }
 
 void main() {
-  testWidgets('active licence hides key inputs and trial action', (tester) async {
+  testWidgets('active licence hides key inputs and trial action', (
+    tester,
+  ) async {
     final service = FakeLicenseService(
       fakeStatus: _activeStatus('Test Business'),
       fakeLicense: _activeLicense('Test Business'),
@@ -129,7 +131,9 @@ void main() {
     expect(find.textContaining('continue with the 14-day trial'), findsNothing);
   });
 
-  testWidgets('trial state cannot start or extend another trial', (tester) async {
+  testWidgets('trial state cannot start or extend another trial', (
+    tester,
+  ) async {
     final service = FakeLicenseService(
       fakeStatus: _trialStatus('Test Business'),
       fakeLicense: _trialLicense('Test Business'),
@@ -147,7 +151,9 @@ void main() {
     expect(find.text('Activate licence'), findsOneWidget);
   });
 
-  testWidgets('new installation offers one explicit trial action', (tester) async {
+  testWidgets('new installation offers one explicit trial action', (
+    tester,
+  ) async {
     final service = FakeLicenseService(
       fakeStatus: const LicenseStatus(
         state: LicenseState.activationRequired,

@@ -114,8 +114,9 @@ class _StockTransferDraftDialogState extends State<StockTransferDraftDialog> {
           children: [
             DropdownButtonFormField<int>(
               initialValue: destinationId,
-              decoration:
-                  const InputDecoration(labelText: 'Destination branch'),
+              decoration: const InputDecoration(
+                labelText: 'Destination branch',
+              ),
               items: [
                 for (final branch in widget.destinations)
                   DropdownMenuItem(
@@ -159,8 +160,8 @@ class _StockTransferDraftDialogState extends State<StockTransferDraftDialog> {
                                     controller: quantities[product.id],
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                                          decimal: true,
+                                        ),
                                     decoration: const InputDecoration(
                                       labelText: 'Quantity',
                                     ),
@@ -212,10 +213,7 @@ class StockTransferReceiptResult {
 }
 
 class StockTransferReceiptDialog extends StatefulWidget {
-  const StockTransferReceiptDialog({
-    super.key,
-    required this.items,
-  });
+  const StockTransferReceiptDialog({super.key, required this.items});
 
   final List<Map<String, Object?>> items;
 
@@ -240,18 +238,15 @@ class _StockTransferReceiptDialogState
       final dispatched =
           (item['dispatched_quantity'] as num? ?? item['quantity'] as num)
               .toDouble();
-      final alreadyReceived =
-          (item['received_quantity'] as num? ?? 0).toDouble();
-      final alreadyDamaged =
-          (item['damaged_quantity'] as num? ?? 0).toDouble();
-      final alreadyMissing =
-          (item['missing_quantity'] as num? ?? 0).toDouble();
+      final alreadyReceived = (item['received_quantity'] as num? ?? 0)
+          .toDouble();
+      final alreadyDamaged = (item['damaged_quantity'] as num? ?? 0).toDouble();
+      final alreadyMissing = (item['missing_quantity'] as num? ?? 0).toDouble();
       final outstanding =
           (dispatched - alreadyReceived - alreadyDamaged - alreadyMissing)
               .clamp(0, double.infinity)
               .toDouble();
-      received[productId] =
-          TextEditingController(text: outstanding.toString());
+      received[productId] = TextEditingController(text: outstanding.toString());
       damaged[productId] = TextEditingController(text: '0');
       missing[productId] = TextEditingController(text: '0');
       excess[productId] = TextEditingController(text: '0');
@@ -397,21 +392,18 @@ class _StockTransferReceiptDialogState
 }
 
 class _ReceiptNumberField extends StatelessWidget {
-  const _ReceiptNumberField({
-    required this.controller,
-    required this.label,
-  });
+  const _ReceiptNumberField({required this.controller, required this.label});
 
   final TextEditingController controller;
   final String label;
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: 130,
-        child: TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: label),
-        ),
-      );
+    width: 130,
+    child: TextField(
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(labelText: label),
+    ),
+  );
 }

@@ -240,7 +240,9 @@ class AppState extends ChangeNotifier {
   }) async {
     _require(CommercialPermission.backupsManage);
     if (password.length < 8) {
-      throw ArgumentError('Backup password must contain at least eight characters.');
+      throw ArgumentError(
+        'Backup password must contain at least eight characters.',
+      );
     }
     await secureConfig.saveBackupPassword(password);
     await _database.saveSettings({
@@ -316,10 +318,7 @@ class AppState extends ChangeNotifier {
     return _backups.listSchedules(branchId: activeBranchId);
   }
 
-  Future<void> setBackupScheduleEnabled(
-    int scheduleId,
-    bool enabled,
-  ) async {
+  Future<void> setBackupScheduleEnabled(int scheduleId, bool enabled) async {
     _require(CommercialPermission.backupsManage);
     final actor = currentUser!;
     await _backups.setScheduleEnabled(
@@ -329,8 +328,7 @@ class AppState extends ChangeNotifier {
     );
     await commercial.logAudit(
       actor: actor,
-      action:
-          enabled ? 'backup.schedule_enabled' : 'backup.schedule_disabled',
+      action: enabled ? 'backup.schedule_enabled' : 'backup.schedule_disabled',
       entityType: 'backup_schedule',
       entityId: '$scheduleId',
     );
@@ -542,7 +540,7 @@ class AppState extends ChangeNotifier {
       branchId: activeBranchId,
       userId: currentUser!.id,
       cashSessionId: draft.paymentMethod == 'Cash'
-          ? currentCashSession?['id'] as int?
+          ? (currentCashSession?['id'] as int?)
           : null,
     );
     await commercial.logAudit(
@@ -630,7 +628,9 @@ class AppState extends ChangeNotifier {
         entityId: path,
       );
     } catch (error) {
-      debugPrint('The restore completed, but its audit entry could not be linked: $error');
+      debugPrint(
+        'The restore completed, but its audit entry could not be linked: $error',
+      );
     }
     currentUser = null;
     currentCashSession = null;
@@ -645,16 +645,16 @@ class AppState extends ChangeNotifier {
   }
 
   Future<int> createDocument(CommercialDocumentDraft draft) async {
-    final id = await commercial.createDocument(actor: currentUser!, draft: draft);
+    final id = await commercial.createDocument(
+      actor: currentUser!,
+      draft: draft,
+    );
     await refreshAll();
     return id;
   }
 
-  Future<String> exportCommercialDocument(int documentId) =>
-      commercialDocuments.exportDocumentPdf(
-        documentId: documentId,
-        settings: settings,
-      );
+  Future<String> exportCommercialDocument(int documentId) => commercialDocuments
+      .exportDocumentPdf(documentId: documentId, settings: settings);
 
   Future<Uint8List> buildCommercialDocumentPdf(int documentId) =>
       commercialDocuments.buildDocumentPdf(

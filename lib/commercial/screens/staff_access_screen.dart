@@ -61,10 +61,11 @@ class _StaffAccessScreenState extends State<StaffAccessScreen> {
                       Text(
                         AppConstants.appName,
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: const Color(0xFF0F2A5A),
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: const Color(0xFF0F2A5A),
+                              fontWeight: FontWeight.w800,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -106,12 +107,18 @@ class _StaffAccessScreenState extends State<StaffAccessScreen> {
                         onSubmitted: (_) => _submit(state),
                         decoration: InputDecoration(
                           labelText: setup ? 'Create PIN' : 'PIN',
-                          helperText: setup ? 'Use at least four digits or characters.' : null,
+                          helperText: setup
+                              ? 'Use at least four digits or characters.'
+                              : null,
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
                             tooltip: obscure ? 'Show PIN' : 'Hide PIN',
                             onPressed: () => setState(() => obscure = !obscure),
-                            icon: Icon(obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                            icon: Icon(
+                              obscure
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
                           ),
                         ),
                       ),
@@ -121,16 +128,25 @@ class _StaffAccessScreenState extends State<StaffAccessScreen> {
                         icon: busy
                             ? const SizedBox.square(
                                 dimension: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
-                            : Icon(setup ? Icons.verified_user_outlined : Icons.login),
+                            : Icon(
+                                setup
+                                    ? Icons.verified_user_outlined
+                                    : Icons.login,
+                              ),
                         label: Text(setup ? 'Create owner account' : 'Sign in'),
                       ),
                       const SizedBox(height: 14),
                       const Text(
                         'Staff PINs are stored as salted password hashes. Failed sign-ins are rate-limited and audited.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 11, color: Color(0xFF667085)),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF667085),
+                        ),
                       ),
                     ],
                   ),
@@ -145,7 +161,10 @@ class _StaffAccessScreenState extends State<StaffAccessScreen> {
 
   Future<void> _submit(AppState state) async {
     if (username.text.trim().isEmpty || pin.text.length < 4) {
-      showFailure(context, 'Enter a username and a PIN of at least four characters.');
+      showFailure(
+        context,
+        'Enter a username and a PIN of at least four characters.',
+      );
       return;
     }
     if (state.requiresOwnerSetup && name.text.trim().isEmpty) {

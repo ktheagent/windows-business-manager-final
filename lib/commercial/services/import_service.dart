@@ -41,11 +41,15 @@ class ImportService {
     final file = File(path);
     if (!await file.exists()) throw StateError('Import file was not found.');
     final rows = await _readRows(file);
-    if (rows.length < 2) throw StateError('The import file contains no data rows.');
+    if (rows.length < 2)
+      throw StateError('The import file contains no data rows.');
     final headers = rows.first
         .map((value) => value.trim().toLowerCase().replaceAll(' ', '_'))
         .toList();
-    final dataRows = rows.skip(1).where((row) => row.any((cell) => cell.trim().isNotEmpty)).toList();
+    final dataRows = rows
+        .skip(1)
+        .where((row) => row.any((cell) => cell.trim().isNotEmpty))
+        .toList();
     final errors = <String>[];
     var imported = 0;
     var skipped = 0;
@@ -73,30 +77,30 @@ class ImportService {
           try {
             final changed = switch (importType) {
               'products' => await _importProduct(
-                  txn,
-                  branchId: actor.branchId,
-                  values: values,
-                  updateExisting: updateExisting,
-                ),
+                txn,
+                branchId: actor.branchId,
+                values: values,
+                updateExisting: updateExisting,
+              ),
               'customers' => await _importContact(
-                  txn,
-                  table: 'customers',
-                  branchId: actor.branchId,
-                  values: values,
-                  updateExisting: updateExisting,
-                ),
+                txn,
+                table: 'customers',
+                branchId: actor.branchId,
+                values: values,
+                updateExisting: updateExisting,
+              ),
               'suppliers' => await _importContact(
-                  txn,
-                  table: 'suppliers',
-                  branchId: actor.branchId,
-                  values: values,
-                  updateExisting: updateExisting,
-                ),
+                txn,
+                table: 'suppliers',
+                branchId: actor.branchId,
+                values: values,
+                updateExisting: updateExisting,
+              ),
               'opening_stock' => await _importOpeningStock(
-                  txn,
-                  branchId: actor.branchId,
-                  values: values,
-                ),
+                txn,
+                branchId: actor.branchId,
+                values: values,
+              ),
               _ => throw ArgumentError('Unsupported import type: $importType'),
             };
             if (changed) {
@@ -166,7 +170,9 @@ class ImportService {
       final sheet = workbook.tables.values.first;
       if (sheet == null) return const [];
       return sheet.rows
-          .map((row) => row.map((cell) => cell?.value?.toString() ?? '').toList())
+          .map(
+            (row) => row.map((cell) => cell?.value?.toString() ?? '').toList(),
+          )
           .toList();
     }
     if (extension != '.csv') {
@@ -194,7 +200,8 @@ class ImportService {
         row.add(field.toString());
         field.clear();
       } else if ((char == '\n' || char == '\r') && !quoted) {
-        if (char == '\r' && i + 1 < content.length && content[i + 1] == '\n') i++;
+        if (char == '\r' && i + 1 < content.length && content[i + 1] == '\n')
+          i++;
         row.add(field.toString());
         field.clear();
         rows.add(row);
@@ -220,19 +227,41 @@ class ImportService {
     if (name.isEmpty) throw ArgumentError('Product name is required.');
     final sku = values['sku'] ?? '';
     final barcode = values['barcode'] ?? '';
-    final cost = _number(values['cost_price'] ?? values['cost'] ?? '0', 'cost price');
-    final price = _number(values['selling_price'] ?? values['price'] ?? '0', 'selling price');
-    final stock = _number(values['stock_qty'] ?? values['quantity'] ?? '0', 'stock quantity');
-    final lowStock = _number(values['low_stock_level'] ?? '5', 'low-stock level');
+    final cost = _number(
+      values['cost_price'] ?? values['cost'] ?? '0',
+      'cost price',
+    );
+    final price = _number(
+      values['selling_price'] ?? values['price'] ?? '0',
+      'selling price',
+    );
+    final stock = _number(
+      values['stock_qty'] ?? values['quantity'] ?? '0',
+      'stock quantity',
+    );
+    final lowStock = _number(
+      values['low_stock_level'] ?? '5',
+      'low-stock level',
+    );
     if (cost < 0 || price < 0 || stock < 0 || lowStock < 0) {
       throw ArgumentError('Prices and quantities cannot be negative.');
     }
     List<Map<String, Object?>> existing = const [];
     if (sku.isNotEmpty) {
-      existing = await db.query('products', where: 'sku = ?', whereArgs: [sku], limit: 1);
+      existing = await db.query(
+        'products',
+        where: 'sku = ?',
+        whereArgs: [sku],
+        limit: 1,
+      );
     }
     if (existing.isEmpty && barcode.isNotEmpty) {
-      existing = await db.query('products', where: 'barcode = ?', whereArgs: [barcode], limit: 1);
+      existing = await db.query(
+        'products',
+        where: 'barcode = ?',
+        whereArgs: [barcode],
+        limit: 1,
+      );
     }
     final now = DateTime.now().toIso8601String();
     if (existing.isNotEmpty) {
@@ -244,7 +273,9 @@ class ImportService {
           'name': name,
           'sku': sku,
           'barcode': barcode,
-          'category': values['category']?.isNotEmpty == true ? values['category'] : 'General',
+          'category': values['category']?.isNotEmpty == true
+              ? values['category']
+              : 'General',
           'cost_price': cost,
           'selling_price': price,
           'low_stock_level': lowStock,
@@ -253,24 +284,22 @@ class ImportService {
         where: 'id = ?',
         whereArgs: [productId],
       );
-      await db.insert(
-        'branch_inventory',
-        {
-          'branch_id': branchId,
-          'product_id': productId,
-          'stock_qty': stock,
-          'low_stock_level': lowStock,
-          'updated_at': now,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await db.insert('branch_inventory', {
+        'branch_id': branchId,
+        'product_id': productId,
+        'stock_qty': stock,
+        'low_stock_level': lowStock,
+        'updated_at': now,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
       return true;
     }
     final productId = await db.insert('products', {
       'name': name,
       'sku': sku,
       'barcode': barcode,
-      'category': values['category']?.isNotEmpty == true ? values['category'] : 'General',
+      'category': values['category']?.isNotEmpty == true
+          ? values['category']
+          : 'General',
       'cost_price': cost,
       'selling_price': price,
       'stock_qty': branchId == DatabaseService.defaultBranchId ? stock : 0,
@@ -300,7 +329,8 @@ class ImportService {
     final email = values['email'] ?? '';
     final existing = await db.query(
       table,
-      where: 'branch_id = ? AND ((phone <> ? AND phone = ?) OR (email <> ? AND email = ?))',
+      where:
+          'branch_id = ? AND ((phone <> ? AND phone = ?) OR (email <> ? AND email = ?))',
       whereArgs: [branchId, '', phone, '', email],
       limit: 1,
     );
@@ -315,7 +345,10 @@ class ImportService {
       'is_active': 1,
     };
     if (table == 'customers') {
-      data['credit_limit'] = _number(values['credit_limit'] ?? '0', 'credit limit');
+      data['credit_limit'] = _number(
+        values['credit_limit'] ?? '0',
+        'credit limit',
+      );
     } else {
       data['tax_number'] = values['tax_number'] ?? '';
     }
@@ -344,7 +377,10 @@ class ImportService {
     if (sku.isEmpty && barcode.isEmpty) {
       throw ArgumentError('SKU or barcode is required.');
     }
-    final quantity = _number(values['quantity'] ?? values['stock_qty'] ?? '0', 'quantity');
+    final quantity = _number(
+      values['quantity'] ?? values['stock_qty'] ?? '0',
+      'quantity',
+    );
     if (quantity < 0) throw ArgumentError('Quantity cannot be negative.');
     final products = await db.query(
       'products',
@@ -354,17 +390,13 @@ class ImportService {
     );
     if (products.isEmpty) throw StateError('Product was not found.');
     final productId = products.first['id'] as int;
-    await db.insert(
-      'branch_inventory',
-      {
-        'branch_id': branchId,
-        'product_id': productId,
-        'stock_qty': quantity,
-        'low_stock_level': products.first['low_stock_level'],
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('branch_inventory', {
+      'branch_id': branchId,
+      'product_id': productId,
+      'stock_qty': quantity,
+      'low_stock_level': products.first['low_stock_level'],
+      'updated_at': DateTime.now().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
     if (branchId == DatabaseService.defaultBranchId) {
       await db.update(
         'products',

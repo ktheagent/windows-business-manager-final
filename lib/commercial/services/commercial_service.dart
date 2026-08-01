@@ -20,7 +20,8 @@ class CommercialService {
 
   Future<bool> hasStaffUsers() async {
     final db = await _database.database;
-    final count = Sqflite.firstIntValue(
+    final count =
+        Sqflite.firstIntValue(
           await db.rawQuery('SELECT COUNT(*) FROM users'),
         ) ??
         0;
@@ -34,7 +35,8 @@ class CommercialService {
   }) async {
     final db = await _database.database;
     return db.transaction((txn) async {
-      final count = Sqflite.firstIntValue(
+      final count =
+          Sqflite.firstIntValue(
             await txn.rawQuery('SELECT COUNT(*) FROM users'),
           ) ??
           0;
@@ -211,7 +213,8 @@ class CommercialService {
         whereArgs: [branchId],
         limit: 1,
       );
-      if (branch.isEmpty) throw StateError('The selected branch is not active.');
+      if (branch.isEmpty)
+        throw StateError('The selected branch is not active.');
       final now = DateTime.now().toIso8601String();
       final id = await txn.insert('users', {
         'branch_id': branchId,
@@ -332,7 +335,8 @@ class CommercialService {
         whereArgs: [primaryBranchId],
         limit: 1,
       );
-      if (branch.isEmpty) throw StateError('The selected branch is not active.');
+      if (branch.isEmpty)
+        throw StateError('The selected branch is not active.');
       final now = DateTime.now().toIso8601String();
       await txn.update(
         'users',
@@ -353,17 +357,13 @@ class CommercialService {
         where: 'user_id = ?',
         whereArgs: [userId],
       );
-      await txn.insert(
-        'user_branch_access',
-        {
-          'user_id': userId,
-          'branch_id': primaryBranchId,
-          'is_primary': 1,
-          'granted_by': actor.id,
-          'granted_at': now,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await txn.insert('user_branch_access', {
+        'user_id': userId,
+        'branch_id': primaryBranchId,
+        'is_primary': 1,
+        'granted_by': actor.id,
+        'granted_at': now,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
       await _writeAudit(
         txn,
         userId: actor.id,
@@ -568,7 +568,8 @@ class CommercialService {
       }
       final ids = branchIds.toList()..sort();
       final placeholders = List.filled(ids.length, '?').join(',');
-      final active = Sqflite.firstIntValue(
+      final active =
+          Sqflite.firstIntValue(
             await txn.rawQuery(
               'SELECT COUNT(*) FROM branches '
               'WHERE is_active = 1 AND id IN ($placeholders)',
@@ -607,10 +608,7 @@ class CommercialService {
         action: 'staff.branches_assigned',
         entityType: 'user',
         entityId: '$userId',
-        newValues: {
-          'branch_ids': ids,
-          'primary_branch_id': primaryBranchId,
-        },
+        newValues: {'branch_ids': ids, 'primary_branch_id': primaryBranchId},
       );
     });
   }
@@ -623,27 +621,34 @@ class CommercialService {
             where: 'is_active = 1',
             orderBy: 'name COLLATE NOCASE',
           )
-        : await db.rawQuery('''
+        : await db.rawQuery(
+            '''
             SELECT b.*
             FROM branches b
             INNER JOIN user_branch_access uba ON uba.branch_id = b.id
             WHERE uba.user_id = ? AND b.is_active = 1
             ORDER BY b.name COLLATE NOCASE
-          ''', [actor.id]);
+          ''',
+            [actor.id],
+          );
     return rows.map(BranchRecord.fromMap).toList(growable: false);
   }
 
   Future<bool> canAccessBranch(StaffUser actor, int branchId) async {
     if (actor.role == StaffRole.owner) return true;
     final db = await _database.database;
-    final count = Sqflite.firstIntValue(
-          await db.rawQuery('''
+    final count =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            '''
             SELECT COUNT(*)
             FROM user_branch_access uba
             INNER JOIN branches b ON b.id = uba.branch_id
             WHERE uba.user_id = ? AND uba.branch_id = ?
               AND b.is_active = 1
-          ''', [actor.id, branchId]),
+          ''',
+            [actor.id, branchId],
+          ),
         ) ??
         0;
     return count > 0;
@@ -655,7 +660,8 @@ class CommercialService {
   }) async {
     _require(actor, CommercialPermission.staffManage);
     final db = await _database.database;
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT ss.*, u.name AS user_name, u.username, u.role,
         b.name AS branch_name
       FROM staff_sessions ss
@@ -663,7 +669,9 @@ class CommercialService {
       INNER JOIN branches b ON b.id = ss.branch_id
       WHERE (? IS NULL OR ss.user_id = ?)
       ORDER BY ss.started_at DESC, ss.id DESC
-    ''', [userId, userId]);
+    ''',
+      [userId, userId],
+    );
   }
 
   Future<void> terminateStaffSession({
@@ -713,7 +721,8 @@ class CommercialService {
   }) async {
     _require(actor, CommercialPermission.auditView);
     final db = await _database.database;
-    final rows = await db.rawQuery('''
+    final rows = await db.rawQuery(
+      '''
       SELECT a.*, u.name AS user_name, u.role AS user_role,
         b.name AS branch_name
       FROM audit_logs a
@@ -722,7 +731,9 @@ class CommercialService {
       WHERE a.user_id = ?
       ORDER BY a.created_at DESC, a.id DESC
       LIMIT ?
-    ''', [userId, limit.clamp(1, 1000).toInt()]);
+    ''',
+      [userId, limit.clamp(1, 1000).toInt()],
+    );
     return rows.map(AuditEntry.fromMap).toList(growable: false);
   }
 
@@ -757,11 +768,14 @@ class CommercialService {
         'is_active': 1,
         'created_at': now,
       });
-      await txn.execute('''
+      await txn.execute(
+        '''
         INSERT INTO branch_inventory
           (branch_id, product_id, stock_qty, low_stock_level, updated_at)
         SELECT ?, id, 0, low_stock_level, ? FROM products WHERE is_active = 1
-      ''', [id, now]);
+      ''',
+        [id, now],
+      );
       await txn.insert('cash_registers', {
         'branch_id': id,
         'name': 'Main Register',
@@ -859,15 +873,29 @@ class CommercialService {
       );
       if (rows.isEmpty) throw StateError('Branch was not found.');
       if (!active) {
-        final openCash = Sqflite.firstIntValue(await txn.rawQuery('''
+        final openCash =
+            Sqflite.firstIntValue(
+              await txn.rawQuery(
+                '''
           SELECT COUNT(*) FROM cash_sessions
           WHERE branch_id = ? AND status = 'open'
-        ''', [branchId])) ?? 0;
-        final openTransfers = Sqflite.firstIntValue(await txn.rawQuery('''
+        ''',
+                [branchId],
+              ),
+            ) ??
+            0;
+        final openTransfers =
+            Sqflite.firstIntValue(
+              await txn.rawQuery(
+                '''
           SELECT COUNT(*) FROM stock_transfers
           WHERE (source_branch_id = ? OR destination_branch_id = ?)
             AND status IN ('draft', 'approved', 'dispatched', 'partially_received')
-        ''', [branchId, branchId])) ?? 0;
+        ''',
+                [branchId, branchId],
+              ),
+            ) ??
+            0;
         if (openCash > 0 || openTransfers > 0) {
           throw StateError(
             'Close cash sessions and active stock transfers before disabling '
@@ -893,19 +921,20 @@ class CommercialService {
     });
   }
 
-  Future<List<Map<String, Object?>>> listCashRegisters(
-    StaffUser actor,
-  ) async {
+  Future<List<Map<String, Object?>>> listCashRegisters(StaffUser actor) async {
     _require(actor, CommercialPermission.cashManage);
     final db = await _database.database;
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT cr.*,
         (SELECT COUNT(*) FROM cash_sessions cs
           WHERE cs.register_id = cr.id AND cs.status = 'open') AS open_sessions
       FROM cash_registers cr
       WHERE cr.branch_id = ? AND cr.is_active = 1
       ORDER BY cr.name COLLATE NOCASE
-    ''', [actor.branchId]);
+    ''',
+      [actor.branchId],
+    );
   }
 
   Future<int> createCashRegister({
@@ -945,14 +974,19 @@ class CommercialService {
     final db = await _database.database;
     await db.transaction((txn) async {
       if (!active) {
-        final open = Sqflite.firstIntValue(await txn.rawQuery(
-              'SELECT COUNT(*) FROM cash_sessions '
-              'WHERE register_id = ? AND status = ?',
-              [registerId, 'open'],
-            )) ??
+        final open =
+            Sqflite.firstIntValue(
+              await txn.rawQuery(
+                'SELECT COUNT(*) FROM cash_sessions '
+                'WHERE register_id = ? AND status = ?',
+                [registerId, 'open'],
+              ),
+            ) ??
             0;
         if (open > 0) {
-          throw StateError('Close the open shift before disabling this register.');
+          throw StateError(
+            'Close the open shift before disabling this register.',
+          );
         }
       }
       final updated = await txn.update(
@@ -966,8 +1000,7 @@ class CommercialService {
         txn,
         userId: actor.id,
         branchId: actor.branchId,
-        action:
-            active ? 'cash_register.enabled' : 'cash_register.disabled',
+        action: active ? 'cash_register.enabled' : 'cash_register.disabled',
         entityType: 'cash_register',
         entityId: '$registerId',
       );
@@ -980,7 +1013,8 @@ class CommercialService {
   }) async {
     _require(actor, CommercialPermission.cashManage);
     final db = await _database.database;
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT cs.*, cr.name AS register_name, u.name AS user_name,
         approver.name AS approved_by_name
       FROM cash_sessions cs
@@ -990,7 +1024,9 @@ class CommercialService {
       WHERE cs.branch_id = ?
       ORDER BY cs.opened_at DESC, cs.id DESC
       LIMIT ?
-    ''', [actor.branchId, limit.clamp(1, 1000).toInt()]);
+    ''',
+      [actor.branchId, limit.clamp(1, 1000).toInt()],
+    );
   }
 
   Future<List<Map<String, Object?>>> cashSessionMovements({
@@ -999,20 +1035,26 @@ class CommercialService {
   }) async {
     _require(actor, CommercialPermission.cashManage);
     final db = await _database.database;
-    final visible = Sqflite.firstIntValue(await db.rawQuery(
-          'SELECT COUNT(*) FROM cash_sessions '
-          'WHERE id = ? AND branch_id = ?',
-          [cashSessionId, actor.branchId],
-        )) ??
+    final visible =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM cash_sessions '
+            'WHERE id = ? AND branch_id = ?',
+            [cashSessionId, actor.branchId],
+          ),
+        ) ??
         0;
     if (visible == 0) throw StateError('Cash session was not found.');
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT cm.*, u.name AS user_name
       FROM cash_movements cm
       LEFT JOIN users u ON u.id = cm.user_id
       WHERE cm.cash_session_id = ?
       ORDER BY cm.created_at, cm.id
-    ''', [cashSessionId]);
+    ''',
+      [cashSessionId],
+    );
   }
 
   Future<void> approveCashVariance({
@@ -1078,7 +1120,8 @@ class CommercialService {
       limit: 1,
     );
     if (sale.isEmpty) throw StateError('Sale was not found.');
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT si.id, si.product_id, si.product_name, si.quantity,
         si.unit_price, si.cost_price,
         MAX(si.quantity - COALESCE((SELECT SUM(ri2.quantity)
@@ -1089,21 +1132,24 @@ class CommercialService {
       FROM sale_items si
       WHERE si.sale_id = ?
       ORDER BY si.id
-    ''', [saleId]);
+    ''',
+      [saleId],
+    );
   }
 
-  Future<List<Map<String, Object?>>> listStockCounts(
-    StaffUser actor,
-  ) async {
+  Future<List<Map<String, Object?>>> listStockCounts(StaffUser actor) async {
     _require(actor, CommercialPermission.stockCount);
     final db = await _database.database;
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT sc.*, u.name AS created_by_name
       FROM stock_counts sc
       LEFT JOIN users u ON u.id = sc.created_by
       WHERE sc.branch_id = ?
       ORDER BY sc.created_at DESC
-    ''', [actor.branchId]);
+    ''',
+      [actor.branchId],
+    );
   }
 
   Future<List<Map<String, Object?>>> stockCountItems({
@@ -1120,13 +1166,16 @@ class CommercialService {
       limit: 1,
     );
     if (count.isEmpty) throw StateError('Stock count was not found.');
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT sci.*, p.name AS product_name, p.sku, p.barcode
       FROM stock_count_items sci
       INNER JOIN products p ON p.id = sci.product_id
       WHERE sci.stock_count_id = ?
       ORDER BY p.name COLLATE NOCASE
-    ''', [stockCountId]);
+    ''',
+      [stockCountId],
+    );
   }
 
   Future<List<Map<String, Object?>>> listRecurringExpenses(
@@ -1148,8 +1197,8 @@ class CommercialService {
   }) async {
     _require(actor, CommercialPermission.auditView);
     final db = await _database.database;
-    final consolidated = actor.role == StaffRole.owner ||
-        actor.role == StaffRole.manager;
+    final consolidated =
+        actor.role == StaffRole.owner || actor.role == StaffRole.manager;
     final rows = await db.rawQuery('''
       SELECT a.*, u.name AS user_name, b.name AS branch_name
       FROM audit_logs a
@@ -1169,7 +1218,8 @@ class CommercialService {
     String note = '',
   }) async {
     _require(actor, CommercialPermission.cashManage);
-    if (openingFloat < 0) throw ArgumentError('Opening float cannot be negative.');
+    if (openingFloat < 0)
+      throw ArgumentError('Opening float cannot be negative.');
     final db = await _database.database;
     return db.transaction((txn) async {
       final register = await txn.query(
@@ -1213,7 +1263,8 @@ class CommercialService {
 
   Future<Map<String, Object?>?> currentCashSession(StaffUser actor) async {
     final db = await _database.database;
-    final rows = await db.rawQuery('''
+    final rows = await db.rawQuery(
+      '''
       SELECT cs.*, cr.name AS register_name,
         COALESCE(SUM(cm.amount), 0) AS expected_total
       FROM cash_sessions cs
@@ -1222,7 +1273,9 @@ class CommercialService {
       WHERE cs.branch_id = ? AND cs.user_id = ? AND cs.status = 'open'
       GROUP BY cs.id
       ORDER BY cs.id DESC LIMIT 1
-    ''', [actor.branchId, actor.id]);
+    ''',
+      [actor.branchId, actor.id],
+    );
     return rows.isEmpty ? null : rows.first;
   }
 
@@ -1248,17 +1301,14 @@ class CommercialService {
     final db = await _database.database;
     await db.transaction((txn) async {
       await _requireOpenCashSession(txn, cashSessionId, actor);
-      final transactionRef =
-          transactionReference?.trim().isNotEmpty == true
+      final transactionRef = transactionReference?.trim().isNotEmpty == true
           ? transactionReference!.trim()
           : _number('CASH', DateTime.now());
       await txn.insert('cash_movements', {
         'cash_session_id': cashSessionId,
         'user_id': actor.id,
         'movement_type': type,
-        'amount': type == 'cash_in'
-            ? normalizedAmount
-            : -normalizedAmount,
+        'amount': type == 'cash_in' ? normalizedAmount : -normalizedAmount,
         'transaction_ref': transactionRef,
         'note': note.trim(),
         'created_at': DateTime.now().toIso8601String(),
@@ -1300,8 +1350,7 @@ class CommercialService {
       final normalizedActual = MoneyMath.round(actualCash);
       final variance = MoneyMath.subtract(normalizedActual, expected);
       final requiresApproval =
-          variance != 0 &&
-          !actor.can(CommercialPermission.cashVarianceApprove);
+          variance != 0 && !actor.can(CommercialPermission.cashVarianceApprove);
       await txn.update(
         'cash_sessions',
         {
@@ -1365,8 +1414,7 @@ class CommercialService {
         'valid_until': draft.validUntil?.toIso8601String(),
         'due_at': draft.dueAt?.toIso8601String(),
         'payment_instructions': draft.paymentInstructions.trim(),
-        'document_date':
-            (draft.documentDate ?? now).toIso8601String(),
+        'document_date': (draft.documentDate ?? now).toIso8601String(),
         'notes': draft.notes.trim(),
         'terms': draft.terms.trim(),
         'created_by': actor.id,
@@ -1435,8 +1483,8 @@ class CommercialService {
           'valid_until': draft.validUntil?.toIso8601String(),
           'due_at': draft.dueAt?.toIso8601String(),
           'payment_instructions': draft.paymentInstructions.trim(),
-          'document_date':
-              (draft.documentDate ?? DateTime.now()).toIso8601String(),
+          'document_date': (draft.documentDate ?? DateTime.now())
+              .toIso8601String(),
           'notes': draft.notes.trim(),
           'terms': draft.terms.trim(),
           'updated_at': now,
@@ -1514,8 +1562,9 @@ class CommercialService {
         'tax': source['tax'],
         'total': source['total'],
         'amount_paid': 0,
-        'balance_due':
-            source['document_type'] == 'invoice' ? source['total'] : 0,
+        'balance_due': source['document_type'] == 'invoice'
+            ? source['total']
+            : 0,
         'debt_posted': 0,
         'valid_until': source['valid_until'],
         'due_at': source['due_at'],
@@ -1528,14 +1577,17 @@ class CommercialService {
         'created_at': now.toIso8601String(),
         'updated_at': now.toIso8601String(),
       });
-      await txn.execute('''
+      await txn.execute(
+        '''
         INSERT INTO document_items
           (document_id, product_id, description, quantity, unit, unit_price,
            cost_price, line_discount, tax_rate, tax_inclusive, line_total)
         SELECT ?, product_id, description, quantity, unit, unit_price,
           cost_price, line_discount, tax_rate, tax_inclusive, line_total
         FROM document_items WHERE document_id = ?
-      ''', [copyId, documentId]);
+      ''',
+        [copyId, documentId],
+      );
       await _writeDocumentHistory(
         txn,
         documentId: copyId,
@@ -1582,8 +1634,7 @@ class CommercialService {
           'Only a draft or unpaid issued document can be cancelled.',
         );
       }
-      final amountPaid =
-          (document['amount_paid'] as num? ?? 0).toDouble();
+      final amountPaid = (document['amount_paid'] as num? ?? 0).toDouble();
       if (amountPaid > 0) {
         throw StateError(
           'A document with payments must be reversed through a credit note '
@@ -1592,10 +1643,8 @@ class CommercialService {
       }
       final now = DateTime.now().toIso8601String();
       final customerId = document['customer_id'] as int?;
-      final debtPosted =
-          (document['debt_posted'] as num? ?? 0).toInt() == 1;
-      final balance =
-          (document['balance_due'] as num? ?? 0).toDouble();
+      final debtPosted = (document['debt_posted'] as num? ?? 0).toInt() == 1;
+      final balance = (document['balance_due'] as num? ?? 0).toDouble();
       if (customerId != null && debtPosted && balance > 0) {
         await txn.rawUpdate(
           'UPDATE customers '
@@ -1659,33 +1708,42 @@ class CommercialService {
   }) async {
     _require(actor, CommercialPermission.documentsManage);
     final db = await _database.database;
-    final exists = Sqflite.firstIntValue(await db.rawQuery(
-          'SELECT COUNT(*) FROM documents '
-          'WHERE id = ? AND branch_id = ?',
-          [documentId, actor.branchId],
-        )) ??
+    final exists =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM documents '
+            'WHERE id = ? AND branch_id = ?',
+            [documentId, actor.branchId],
+          ),
+        ) ??
         0;
     if (exists == 0) throw StateError('Document was not found.');
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT h.*, u.name AS changed_by_name
       FROM document_status_history h
       LEFT JOIN users u ON u.id = h.changed_by
       WHERE h.document_id = ?
       ORDER BY h.changed_at, h.id
-    ''', [documentId]);
+    ''',
+      [documentId],
+    );
   }
 
   Future<List<Map<String, Object?>>> listDocuments(StaffUser actor) async {
     _require(actor, CommercialPermission.documentsManage);
     final db = await _database.database;
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT d.*, c.name AS customer_name, c.phone AS customer_phone,
         c.email AS customer_email
       FROM documents d
       LEFT JOIN customers c ON c.id = d.customer_id
       WHERE d.branch_id = ?
       ORDER BY d.created_at DESC
-    ''', [actor.branchId]);
+    ''',
+      [actor.branchId],
+    );
   }
 
   Future<List<Map<String, Object?>>> documentItems(int documentId) async {
@@ -1711,7 +1769,8 @@ class CommercialService {
         whereArgs: [documentId, actor.branchId, 'draft'],
         limit: 1,
       );
-      if (rows.isEmpty) throw StateError('Only a draft document can be issued.');
+      if (rows.isEmpty)
+        throw StateError('Only a draft document can be issued.');
       final document = rows.first;
       final now = DateTime.now().toIso8601String();
       var debtPosted = (document['debt_posted'] as num? ?? 0).toInt();
@@ -1719,7 +1778,9 @@ class CommercialService {
         final customerId = document['customer_id'] as int?;
         final balance = (document['balance_due'] as num? ?? 0).toDouble();
         if (balance > 0 && customerId == null) {
-          throw StateError('A customer is required before issuing a credit invoice.');
+          throw StateError(
+            'A customer is required before issuing a credit invoice.',
+          );
         }
         if (customerId != null && balance > 0) {
           await _enforceCreditLimit(
@@ -1798,7 +1859,9 @@ class CommercialService {
       final sourceCustomerId = source['customer_id'] as int?;
       final sourceTotal = (source['total'] as num).toDouble();
       if (sourceCustomerId == null && sourceTotal > 0) {
-        throw StateError('A customer is required before creating a credit invoice.');
+        throw StateError(
+          'A customer is required before creating a credit invoice.',
+        );
       }
       if (sourceCustomerId != null && sourceTotal > 0) {
         await _enforceCreditLimit(
@@ -1831,14 +1894,17 @@ class CommercialService {
         'created_at': now.toIso8601String(),
         'updated_at': now.toIso8601String(),
       });
-      await txn.execute('''
+      await txn.execute(
+        '''
         INSERT INTO document_items
           (document_id, product_id, description, quantity, unit, unit_price,
            cost_price, line_discount, tax_rate, tax_inclusive, line_total)
         SELECT ?, product_id, description, quantity, unit, unit_price,
           cost_price, line_discount, tax_rate, tax_inclusive, line_total
         FROM document_items WHERE document_id = ?
-      ''', [invoiceId, quotationId]);
+      ''',
+        [invoiceId, quotationId],
+      );
       final customerId = source['customer_id'] as int?;
       final invoiceBalance = (source['total'] as num).toDouble();
       if (customerId != null && invoiceBalance > 0) {
@@ -1928,21 +1994,24 @@ class CommercialService {
       if ({'draft', 'cancelled', 'converted'}.contains(oldStatus)) {
         throw StateError('This invoice cannot accept payments.');
       }
-      final balance =
-          MoneyMath.round((invoice['balance_due'] as num? ?? 0).toDouble());
+      final balance = MoneyMath.round(
+        (invoice['balance_due'] as num? ?? 0).toDouble(),
+      );
       if (normalizedAmount > balance) {
         throw StateError('Payment cannot exceed the outstanding balance.');
       }
       final now = DateTime.now();
-      final transactionRef =
-          transactionReference?.trim().isNotEmpty == true
+      final transactionRef = transactionReference?.trim().isNotEmpty == true
           ? transactionReference!.trim()
           : _number('PAY', now);
-      final duplicate = Sqflite.firstIntValue(await txn.rawQuery(
-            'SELECT COUNT(*) FROM document_payments '
-            'WHERE transaction_ref = ?',
-            [transactionRef],
-          )) ??
+      final duplicate =
+          Sqflite.firstIntValue(
+            await txn.rawQuery(
+              'SELECT COUNT(*) FROM document_payments '
+              'WHERE transaction_ref = ?',
+              [transactionRef],
+            ),
+          ) ??
           0;
       if (duplicate > 0) {
         throw StateError('This payment reference has already been processed.');
@@ -1958,8 +2027,9 @@ class CommercialService {
         'transaction_ref': transactionRef,
         'created_at': now.toIso8601String(),
       });
-      final nextBalance =
-          MoneyMath.clampNonNegative(balance - normalizedAmount);
+      final nextBalance = MoneyMath.clampNonNegative(
+        balance - normalizedAmount,
+      );
       final nextStatus = nextBalance == 0 ? 'paid' : 'part_paid';
       await txn.update(
         'documents',
@@ -1976,8 +2046,7 @@ class CommercialService {
         whereArgs: [documentId],
       );
       final customerId = invoice['customer_id'] as int?;
-      final debtPosted =
-          (invoice['debt_posted'] as num? ?? 0).toInt() == 1;
+      final debtPosted = (invoice['debt_posted'] as num? ?? 0).toInt() == 1;
       if (customerId != null && debtPosted) {
         await txn.rawUpdate(
           'UPDATE customers SET balance = MAX(0, balance - ?) '
@@ -2088,16 +2157,17 @@ class CommercialService {
         }
       }
 
-      final total =
-          MoneyMath.round((document['total'] as num? ?? 0).toDouble());
-      final priorPaid =
-          MoneyMath.round((document['amount_paid'] as num? ?? 0).toDouble());
+      final total = MoneyMath.round(
+        (document['total'] as num? ?? 0).toDouble(),
+      );
+      final priorPaid = MoneyMath.round(
+        (document['amount_paid'] as num? ?? 0).toDouble(),
+      );
       final directCredit = paymentMethod == 'Credit';
       final amountPaid = document['document_type'] == 'invoice'
           ? priorPaid
           : (directCredit ? 0.0 : total);
-      final balanceDue =
-          MoneyMath.clampNonNegative(total - amountPaid);
+      final balanceDue = MoneyMath.clampNonNegative(total - amountPaid);
       final customerId = document['customer_id'] as int?;
       final debtAlreadyPosted =
           (document['debt_posted'] as num? ?? 0).toInt() == 1;
@@ -2149,7 +2219,12 @@ class CommercialService {
         if (productId != null) {
           await txn.rawUpdate(
             'UPDATE branch_inventory SET stock_qty = stock_qty - ?, updated_at = ? WHERE branch_id = ? AND product_id = ?',
-            [item['quantity'], now.toIso8601String(), actor.branchId, productId],
+            [
+              item['quantity'],
+              now.toIso8601String(),
+              actor.branchId,
+              productId,
+            ],
           );
           if (actor.branchId == DatabaseService.defaultBranchId) {
             await txn.rawUpdate(
@@ -2303,13 +2378,16 @@ class CommercialService {
   Future<List<Map<String, Object?>>> listPurchaseOrders(StaffUser actor) async {
     _require(actor, CommercialPermission.purchasingManage);
     final db = await _database.database;
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT po.*, s.name AS supplier_name
       FROM purchase_orders po
       INNER JOIN suppliers s ON s.id = po.supplier_id
       WHERE po.branch_id = ?
       ORDER BY po.created_at DESC
-    ''', [actor.branchId]);
+    ''',
+      [actor.branchId],
+    );
   }
 
   Future<List<Map<String, Object?>>> purchaseOrderItems({
@@ -2326,13 +2404,16 @@ class CommercialService {
       limit: 1,
     );
     if (order.isEmpty) throw StateError('Purchase order was not found.');
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT poi.*, p.name AS product_name, p.sku, p.barcode
       FROM purchase_order_items poi
       INNER JOIN products p ON p.id = poi.product_id
       WHERE poi.purchase_order_id = ?
       ORDER BY poi.id
-    ''', [purchaseOrderId]);
+    ''',
+      [purchaseOrderId],
+    );
   }
 
   Future<String> receivePurchaseOrder({
@@ -2415,12 +2496,16 @@ class CommercialService {
           ),
         });
       }
-      final totals = await txn.rawQuery('''
+      final totals = await txn.rawQuery(
+        '''
         SELECT SUM(CASE WHEN received_qty < ordered_qty THEN 1 ELSE 0 END) AS open_lines
         FROM purchase_order_items WHERE purchase_order_id = ?
-      ''', [purchaseOrderId]);
+      ''',
+        [purchaseOrderId],
+      );
       final openLines = (totals.first['open_lines'] as num? ?? 0).toInt();
-      final previousReceived = (order['received_value'] as num? ?? 0).toDouble();
+      final previousReceived = (order['received_value'] as num? ?? 0)
+          .toDouble();
       final paid = (order['amount_paid'] as num? ?? 0).toDouble();
       final oldOutstanding = max(0, previousReceived - paid).toDouble();
       final nextReceived = previousReceived + receivedValue;
@@ -2493,7 +2578,10 @@ class CommercialService {
         final order = rows.first;
         final previousPaid = (order['amount_paid'] as num? ?? 0).toDouble();
         final receivedValue = (order['received_value'] as num? ?? 0).toDouble();
-        final previousOutstanding = max(0, receivedValue - previousPaid).toDouble();
+        final previousOutstanding = max(
+          0,
+          receivedValue - previousPaid,
+        ).toDouble();
         final nextPaid = previousPaid + amount;
         final nextOutstanding = max(0, receivedValue - nextPaid).toDouble();
         liabilityReduction = previousOutstanding - nextOutstanding;
@@ -2575,7 +2663,8 @@ class CommercialService {
     String note = '',
   }) async {
     _require(actor, CommercialPermission.stockAdjust);
-    if (quantityChange == 0) throw ArgumentError('Quantity change is required.');
+    if (quantityChange == 0)
+      throw ArgumentError('Quantity change is required.');
     final db = await _database.database;
     await db.transaction((txn) async {
       final stock = await txn.query(
@@ -2588,7 +2677,8 @@ class CommercialService {
       if (stock.isEmpty) throw StateError('Product is not stocked here.');
       final oldQty = (stock.first['stock_qty'] as num).toDouble();
       final newQty = oldQty + quantityChange;
-      if (newQty < 0) throw StateError('Adjustment would create negative stock.');
+      if (newQty < 0)
+        throw StateError('Adjustment would create negative stock.');
       await txn.update(
         'branch_inventory',
         {'stock_qty': newQty, 'updated_at': DateTime.now().toIso8601String()},
@@ -2646,12 +2736,15 @@ class CommercialService {
         'started_at': now.toIso8601String(),
         'notes': notes.trim(),
       });
-      await txn.execute('''
+      await txn.execute(
+        '''
         INSERT INTO stock_count_items
           (stock_count_id, product_id, expected_qty, counted_qty, posted)
         SELECT ?, product_id, stock_qty, NULL, 0
         FROM branch_inventory WHERE branch_id = ?
-      ''', [id, actor.branchId]);
+      ''',
+        [id, actor.branchId],
+      );
       await _writeAudit(
         txn,
         userId: actor.id,
@@ -2673,14 +2766,17 @@ class CommercialService {
     _require(actor, CommercialPermission.stockCount);
     if (countedQuantity < 0) throw ArgumentError('Count cannot be negative.');
     final db = await _database.database;
-    final changed = await db.rawUpdate('''
+    final changed = await db.rawUpdate(
+      '''
       UPDATE stock_count_items SET counted_qty = ?
       WHERE stock_count_id = ? AND product_id = ? AND posted = 0
         AND EXISTS (
           SELECT 1 FROM stock_counts sc
           WHERE sc.id = stock_count_id AND sc.branch_id = ? AND sc.status = 'draft'
         )
-    ''', [countedQuantity, stockCountId, productId, actor.branchId]);
+    ''',
+      [countedQuantity, stockCountId, productId, actor.branchId],
+    );
     if (changed != 1) throw StateError('Stock-count item cannot be updated.');
   }
 
@@ -2697,13 +2793,18 @@ class CommercialService {
         whereArgs: [stockCountId, actor.branchId, 'draft'],
         limit: 1,
       );
-      if (counts.isEmpty) throw StateError('Stock count is not awaiting approval.');
-      final missing = Sqflite.firstIntValue(await txn.rawQuery(
-            'SELECT COUNT(*) FROM stock_count_items WHERE stock_count_id = ? AND counted_qty IS NULL',
-            [stockCountId],
-          )) ??
+      if (counts.isEmpty)
+        throw StateError('Stock count is not awaiting approval.');
+      final missing =
+          Sqflite.firstIntValue(
+            await txn.rawQuery(
+              'SELECT COUNT(*) FROM stock_count_items WHERE stock_count_id = ? AND counted_qty IS NULL',
+              [stockCountId],
+            ),
+          ) ??
           0;
-      if (missing > 0) throw StateError('$missing products have not been counted.');
+      if (missing > 0)
+        throw StateError('$missing products have not been counted.');
       final items = await txn.query(
         'stock_count_items',
         where: 'stock_count_id = ? AND posted = 0',
@@ -2715,7 +2816,10 @@ class CommercialService {
         final productId = item['product_id'] as int;
         await txn.update(
           'branch_inventory',
-          {'stock_qty': counted, 'updated_at': DateTime.now().toIso8601String()},
+          {
+            'stock_qty': counted,
+            'updated_at': DateTime.now().toIso8601String(),
+          },
           where: 'branch_id = ? AND product_id = ?',
           whereArgs: [actor.branchId, productId],
         );
@@ -2806,21 +2910,28 @@ class CommercialService {
         );
         if (items.isEmpty) throw StateError('Sale item was not found.');
         final item = items.first;
-        final returnedRows = await txn.rawQuery('''
+        final returnedRows = await txn.rawQuery(
+          '''
           SELECT COALESCE(SUM(ri.quantity), 0) AS value
           FROM return_items ri
           INNER JOIN returns r ON r.id = ri.return_id
           WHERE ri.sale_item_id = ?
-        ''', [entry.key]);
-        final alreadyReturned =
-            (returnedRows.first['value'] as num? ?? 0).toDouble();
+        ''',
+          [entry.key],
+        );
+        final alreadyReturned = (returnedRows.first['value'] as num? ?? 0)
+            .toDouble();
         final sold = (item['quantity'] as num).toDouble();
         if (entry.value <= 0 || alreadyReturned + entry.value > sold + 0.001) {
           throw StateError('Return quantity exceeds the quantity sold.');
         }
         final lineTotal = entry.value * (item['unit_price'] as num).toDouble();
         total += lineTotal;
-        validated.add({...item, 'return_quantity': entry.value, 'return_total': lineTotal});
+        validated.add({
+          ...item,
+          'return_quantity': entry.value,
+          'return_total': lineTotal,
+        });
       }
       final now = DateTime.now();
       final returnNo = _number('RET', now);
@@ -2956,7 +3067,11 @@ class CommercialService {
       action: 'recurring_expense.created',
       entityType: 'recurring_expense',
       entityId: '$id',
-      newValues: {'title': title.trim(), 'amount': amount, 'frequency': frequency},
+      newValues: {
+        'title': title.trim(),
+        'amount': amount,
+        'frequency': frequency,
+      },
     );
     return id;
   }
@@ -3081,7 +3196,9 @@ class CommercialService {
           limit: 1,
         );
         if (products.isEmpty) {
-          throw StateError('A selected transfer product is inactive or missing.');
+          throw StateError(
+            'A selected transfer product is inactive or missing.',
+          );
         }
         await txn.insert('stock_transfer_items', {
           'transfer_id': id,
@@ -3133,7 +3250,9 @@ class CommercialService {
         limit: 1,
       );
       if (transfers.isEmpty) {
-        throw StateError('Only a draft transfer in this branch can be approved.');
+        throw StateError(
+          'Only a draft transfer in this branch can be approved.',
+        );
       }
       final items = await txn.query(
         'stock_transfer_items',
@@ -3158,11 +3277,7 @@ class CommercialService {
       final now = DateTime.now().toIso8601String();
       await txn.update(
         'stock_transfers',
-        {
-          'status': 'approved',
-          'approved_by': actor.id,
-          'approved_at': now,
-        },
+        {'status': 'approved', 'approved_by': actor.id, 'approved_at': now},
         where: 'id = ?',
         whereArgs: [transferId],
       );
@@ -3262,15 +3377,12 @@ class CommercialService {
       final rows = await txn.query(
         'stock_transfers',
         columns: ['status'],
-        where:
-            'id = ? AND source_branch_id = ? AND status IN (?, ?)',
+        where: 'id = ? AND source_branch_id = ? AND status IN (?, ?)',
         whereArgs: [transferId, actor.branchId, 'draft', 'approved'],
         limit: 1,
       );
       if (rows.isEmpty) {
-        throw StateError(
-          'Only a draft or approved transfer can be cancelled.',
-        );
+        throw StateError('Only a draft or approved transfer can be cancelled.');
       }
       final oldStatus = rows.first['status'] as String;
       final now = DateTime.now().toIso8601String();
@@ -3442,20 +3554,21 @@ class CommercialService {
         final dispatched =
             (item['dispatched_quantity'] as num? ?? item['quantity'] as num)
                 .toDouble();
-        final previousReceived =
-            (item['received_quantity'] as num? ?? 0).toDouble();
-        final previousDamaged =
-            (item['damaged_quantity'] as num? ?? 0).toDouble();
-        final previousMissing =
-            (item['missing_quantity'] as num? ?? 0).toDouble();
-        final previousExcess =
-            (item['excess_quantity'] as num? ?? 0).toDouble();
+        final previousReceived = (item['received_quantity'] as num? ?? 0)
+            .toDouble();
+        final previousDamaged = (item['damaged_quantity'] as num? ?? 0)
+            .toDouble();
+        final previousMissing = (item['missing_quantity'] as num? ?? 0)
+            .toDouble();
+        final previousExcess = (item['excess_quantity'] as num? ?? 0)
+            .toDouble();
 
         final remaining = max(
           0,
           dispatched - previousReceived - previousDamaged - previousMissing,
         ).toDouble();
-        final received = receivedByProductId?[productId] ??
+        final received =
+            receivedByProductId?[productId] ??
             (receivedByProductId == null ? remaining : 0);
         final damaged = damagedByProductId?[productId] ?? 0;
         final missing = missingByProductId?[productId] ?? 0;
@@ -3530,7 +3643,8 @@ class CommercialService {
         oldStatus: oldStatus,
         newStatus: nextStatus,
         actor: actor,
-        reason: discrepancyReasons?.values
+        reason:
+            discrepancyReasons?.values
                 .where((value) => value.trim().isNotEmpty)
                 .join('; ') ??
             '',
@@ -3569,7 +3683,9 @@ class CommercialService {
         limit: 1,
       );
       if (transfers.isEmpty) {
-        throw StateError('Only a completed, unreversed transfer can be reversed.');
+        throw StateError(
+          'Only a completed, unreversed transfer can be reversed.',
+        );
       }
       final destinationBranchId =
           transfers.first['destination_branch_id'] as int;
@@ -3675,26 +3791,36 @@ class CommercialService {
     required int transferId,
   }) async {
     final db = await _database.database;
-    final visible = Sqflite.firstIntValue(await db.rawQuery('''
+    final visible =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            '''
       SELECT COUNT(*) FROM stock_transfers
       WHERE id = ? AND (
         source_branch_id = ? OR destination_branch_id = ?
         OR ? IN ('owner', 'manager')
       )
-    ''', [
-      transferId,
-      actor.branchId,
-      actor.branchId,
-      actor.role.databaseValue,
-    ])) ?? 0;
+    ''',
+            [
+              transferId,
+              actor.branchId,
+              actor.branchId,
+              actor.role.databaseValue,
+            ],
+          ),
+        ) ??
+        0;
     if (visible == 0) throw StateError('Stock transfer was not found.');
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT sti.*, p.name AS product_name, p.sku, p.barcode, p.unit
       FROM stock_transfer_items sti
       INNER JOIN products p ON p.id = sti.product_id
       WHERE sti.transfer_id = ?
       ORDER BY p.name COLLATE NOCASE
-    ''', [transferId]);
+    ''',
+      [transferId],
+    );
   }
 
   Future<List<Map<String, Object?>>> stockTransferHistory({
@@ -3703,13 +3829,16 @@ class CommercialService {
   }) async {
     await stockTransferItems(actor: actor, transferId: transferId);
     final db = await _database.database;
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT h.*, u.name AS changed_by_name
       FROM stock_transfer_status_history h
       LEFT JOIN users u ON u.id = h.changed_by
       WHERE h.transfer_id = ?
       ORDER BY h.changed_at, h.id
-    ''', [transferId]);
+    ''',
+      [transferId],
+    );
   }
 
   Future<List<Map<String, Object?>>> listCustomerAccounts(
@@ -3717,7 +3846,8 @@ class CommercialService {
   ) async {
     _require(actor, CommercialPermission.debtView);
     final db = await _database.database;
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT c.id, c.name, c.phone, c.email, c.balance,
         c.credit_limit, c.credit_enabled, c.created_at,
         COALESCE(SUM(CASE
@@ -3735,7 +3865,9 @@ class CommercialService {
       WHERE c.branch_id = ? AND COALESCE(c.is_active, 1) = 1
       GROUP BY c.id
       ORDER BY c.balance DESC, c.name COLLATE NOCASE
-    ''', [DateTime.now().toIso8601String(), actor.branchId]);
+    ''',
+      [DateTime.now().toIso8601String(), actor.branchId],
+    );
   }
 
   Future<void> setCustomerCredit({
@@ -3762,10 +3894,7 @@ class CommercialService {
       final oldValues = Map<String, Object?>.from(rows.first);
       final changed = await txn.update(
         'customers',
-        {
-          'credit_limit': creditLimit,
-          'credit_enabled': enabled ? 1 : 0,
-        },
+        {'credit_limit': creditLimit, 'credit_enabled': enabled ? 1 : 0},
         where: 'id = ? AND branch_id = ?',
         whereArgs: [customerId, actor.branchId],
       );
@@ -3780,10 +3909,7 @@ class CommercialService {
         entityType: 'customer',
         entityId: '$customerId',
         oldValues: oldValues,
-        newValues: {
-          'credit_limit': creditLimit,
-          'credit_enabled': enabled,
-        },
+        newValues: {'credit_limit': creditLimit, 'credit_enabled': enabled},
         reason: reason,
       );
     });
@@ -3889,9 +4015,7 @@ class CommercialService {
     });
   }
 
-  Future<List<Map<String, Object?>>> listStockTransfers(
-    StaffUser actor,
-  ) async {
+  Future<List<Map<String, Object?>>> listStockTransfers(StaffUser actor) async {
     _require(actor, CommercialPermission.stockAdjust);
     final db = await _database.database;
     final canSeeAll =
@@ -3914,7 +4038,9 @@ class CommercialService {
     bool consolidated = false,
   }) async {
     _require(actor, CommercialPermission.dashboardView);
-    if (consolidated && actor.role != StaffRole.owner && actor.role != StaffRole.manager) {
+    if (consolidated &&
+        actor.role != StaffRole.owner &&
+        actor.role != StaffRole.manager) {
       throw StateError('Consolidated reporting is not permitted.');
     }
     final db = await _database.database;
@@ -3952,12 +4078,17 @@ class CommercialService {
       SELECT COALESCE(SUM(CASE WHEN stock_qty <= low_stock_level THEN 1 ELSE 0 END), 0) AS low
       FROM branch_inventory WHERE 1 = 1 ${consolidated ? '' : 'AND branch_id = ?'}
     ''', args);
-    final expiryDate = DateTime.now().add(const Duration(days: 30)).toIso8601String();
-    final expiring = await db.rawQuery('''
+    final expiryDate = DateTime.now()
+        .add(const Duration(days: 30))
+        .toIso8601String();
+    final expiring = await db.rawQuery(
+      '''
       SELECT COUNT(*) AS value FROM product_batches
       WHERE quantity > 0 AND expires_at IS NOT NULL AND expires_at <= ?
       ${consolidated ? '' : 'AND branch_id = ?'}
-    ''', [expiryDate, ...args]);
+    ''',
+      [expiryDate, ...args],
+    );
     final refunds = await db.rawQuery('''
       SELECT COALESCE(SUM(amount), 0) AS value FROM refunds
       WHERE 1 = 1 ${consolidated ? '' : 'AND branch_id = ?'}
@@ -3977,20 +4108,35 @@ class CommercialService {
     final refundValue = (refunds.first['value'] as num? ?? 0).toDouble();
     final cashVariance = (variance.first['value'] as num? ?? 0).toDouble();
     final suggestions = <String>[];
-    if (low > 0) suggestions.add('Reorder $low low-stock product${low == 1 ? '' : 's'}.');
+    if (low > 0)
+      suggestions.add('Reorder $low low-stock product${low == 1 ? '' : 's'}.');
     if (expiringCount > 0) {
-      suggestions.add('Review $expiringCount batch${expiringCount == 1 ? '' : 'es'} expiring within 30 days.');
+      suggestions.add(
+        'Review $expiringCount batch${expiringCount == 1 ? '' : 'es'} expiring within 30 days.',
+      );
     }
     if (debt > revenue * 0.35 && debt > 0) {
-      suggestions.add('Customer debt is high compared with recorded revenue. Follow up overdue accounts.');
+      suggestions.add(
+        'Customer debt is high compared with recorded revenue. Follow up overdue accounts.',
+      );
     }
-    if (supplier > 0) suggestions.add('Review unpaid supplier balances before their due dates.');
-    if (cashVariance > 0) suggestions.add('Investigate closed cash sessions with recorded variances.');
+    if (supplier > 0)
+      suggestions.add(
+        'Review unpaid supplier balances before their due dates.',
+      );
+    if (cashVariance > 0)
+      suggestions.add(
+        'Investigate closed cash sessions with recorded variances.',
+      );
     if (revenue > 0 && refundValue / revenue > 0.05) {
-      suggestions.add('Refunds exceed 5% of revenue. Review return reasons and product quality.');
+      suggestions.add(
+        'Refunds exceed 5% of revenue. Review return reasons and product quality.',
+      );
     }
     if (revenue == 0) {
-      suggestions.add('More sales history is needed before detailed performance suggestions can be generated.');
+      suggestions.add(
+        'More sales history is needed before detailed performance suggestions can be generated.',
+      );
     }
     return BusinessHealthSnapshot(
       revenue: revenue,
@@ -4007,10 +4153,13 @@ class CommercialService {
     );
   }
 
-  Future<List<Map<String, Object?>>> lowStockSuggestions(StaffUser actor) async {
+  Future<List<Map<String, Object?>>> lowStockSuggestions(
+    StaffUser actor,
+  ) async {
     _require(actor, CommercialPermission.reportsView);
     final db = await _database.database;
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT p.id, p.name, p.sku, p.barcode, p.category,
         bi.stock_qty, bi.low_stock_level,
         p.reorder_quantity, p.lead_time_days,
@@ -4020,7 +4169,9 @@ class CommercialService {
       INNER JOIN branch_inventory bi ON bi.product_id = p.id
       WHERE bi.branch_id = ? AND bi.stock_qty <= bi.low_stock_level
       ORDER BY (bi.low_stock_level - bi.stock_qty) DESC
-    ''', [actor.branchId]);
+    ''',
+      [actor.branchId],
+    );
   }
 
   Future<void> logAudit({
@@ -4087,11 +4238,13 @@ class CommercialService {
     }
   }
 
-  static Future<StaffUser> _staffById(
-    DatabaseExecutor db,
-    int id,
-  ) async {
-    final rows = await db.query('users', where: 'id = ?', whereArgs: [id], limit: 1);
+  static Future<StaffUser> _staffById(DatabaseExecutor db, int id) async {
+    final rows = await db.query(
+      'users',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     if (rows.isEmpty) throw StateError('Staff user was not found.');
     final role = rows.first['role'] as String;
     final roleRows = await db.query(
@@ -4132,7 +4285,8 @@ class CommercialService {
       whereArgs: [customerId, branchId],
       limit: 1,
     );
-    if (rows.isEmpty) throw StateError('Customer was not found in this branch.');
+    if (rows.isEmpty)
+      throw StateError('Customer was not found in this branch.');
     final row = rows.first;
     if ((row['credit_enabled'] as num? ?? 1).toInt() != 1) {
       throw StateError('Credit is disabled for this customer.');
@@ -4156,7 +4310,8 @@ class CommercialService {
       whereArgs: [cashSessionId, actor.branchId, actor.id, 'open'],
       limit: 1,
     );
-    if (sessions.isEmpty) throw StateError('The cash-register session is not open.');
+    if (sessions.isEmpty)
+      throw StateError('The cash-register session is not open.');
   }
 
   static Future<void> _writeDocumentHistory(
@@ -4166,15 +4321,14 @@ class CommercialService {
     required String newStatus,
     required StaffUser actor,
     String reason = '',
-  }) =>
-      db.insert('document_status_history', {
-        'document_id': documentId,
-        'old_status': oldStatus,
-        'new_status': newStatus,
-        'changed_by': actor.id,
-        'reason': reason.trim(),
-        'changed_at': DateTime.now().toIso8601String(),
-      });
+  }) => db.insert('document_status_history', {
+    'document_id': documentId,
+    'old_status': oldStatus,
+    'new_status': newStatus,
+    'changed_by': actor.id,
+    'reason': reason.trim(),
+    'changed_at': DateTime.now().toIso8601String(),
+  });
 
   static Future<double> _branchStock(
     DatabaseExecutor db, {
@@ -4188,9 +4342,7 @@ class CommercialService {
       whereArgs: [branchId, productId],
       limit: 1,
     );
-    return rows.isEmpty
-        ? 0
-        : (rows.first['stock_qty'] as num? ?? 0).toDouble();
+    return rows.isEmpty ? 0 : (rows.first['stock_qty'] as num? ?? 0).toDouble();
   }
 
   static Future<void> _writeTransferHistory(
@@ -4200,15 +4352,14 @@ class CommercialService {
     required String newStatus,
     required StaffUser actor,
     String reason = '',
-  }) =>
-      db.insert('stock_transfer_status_history', {
-        'transfer_id': transferId,
-        'old_status': oldStatus,
-        'new_status': newStatus,
-        'changed_by': actor.id,
-        'reason': reason.trim(),
-        'changed_at': DateTime.now().toIso8601String(),
-      });
+  }) => db.insert('stock_transfer_status_history', {
+    'transfer_id': transferId,
+    'old_status': oldStatus,
+    'new_status': newStatus,
+    'changed_by': actor.id,
+    'reason': reason.trim(),
+    'changed_at': DateTime.now().toIso8601String(),
+  });
 
   static Future<void> _increaseBranchStock(
     DatabaseExecutor db, {
@@ -4217,17 +4368,13 @@ class CommercialService {
     required double quantity,
   }) async {
     final now = DateTime.now().toIso8601String();
-    await db.insert(
-      'branch_inventory',
-      {
-        'branch_id': branchId,
-        'product_id': productId,
-        'stock_qty': 0,
-        'low_stock_level': 5,
-        'updated_at': now,
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    await db.insert('branch_inventory', {
+      'branch_id': branchId,
+      'product_id': productId,
+      'stock_qty': 0,
+      'low_stock_level': 5,
+      'updated_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
     await db.rawUpdate(
       'UPDATE branch_inventory SET stock_qty = stock_qty + ?, updated_at = ? WHERE branch_id = ? AND product_id = ?',
       [quantity, now, branchId, productId],

@@ -72,8 +72,7 @@ class NotificationService {
       'Your $documentType $documentNumber from $businessName is ready.',
       'Amount: $formattedAmount',
       if (dueDate.trim().isNotEmpty) 'Due date: ${dueDate.trim()}',
-      if (downloadLink.trim().isNotEmpty)
-        'Document: ${downloadLink.trim()}',
+      if (downloadLink.trim().isNotEmpty) 'Document: ${downloadLink.trim()}',
       '',
       'Thank you.',
     ];
@@ -114,10 +113,7 @@ class NotificationService {
       components.add({
         'type': 'body',
         'parameters': variables
-            .map((value) => {
-                  'type': 'text',
-                  'text': value,
-                })
+            .map((value) => {'type': 'text', 'text': value})
             .toList(growable: false),
       });
     }
@@ -159,8 +155,7 @@ class NotificationService {
             .post(
               endpoint,
               headers: {
-                HttpHeaders.authorizationHeader:
-                    'Bearer ${accessToken.trim()}',
+                HttpHeaders.authorizationHeader: 'Bearer ${accessToken.trim()}',
                 HttpHeaders.contentTypeHeader: 'application/json',
               },
               body: jsonEncode(payload),
@@ -216,15 +211,16 @@ class NotificationService {
   }) async {
     _requireHttps(endpoint, 'WhatsApp API');
     try {
-      final response = await http.get(
-        endpoint,
-        headers: {
-          HttpHeaders.authorizationHeader: 'Bearer ${accessToken.trim()}',
-          HttpHeaders.acceptHeader: 'application/json',
-        },
-      ).timeout(timeout);
-      final success =
-          response.statusCode >= 200 && response.statusCode < 300;
+      final response = await http
+          .get(
+            endpoint,
+            headers: {
+              HttpHeaders.authorizationHeader: 'Bearer ${accessToken.trim()}',
+              HttpHeaders.acceptHeader: 'application/json',
+            },
+          )
+          .timeout(timeout);
+      final success = response.statusCode >= 200 && response.statusCode < 300;
       await _logIntegrationTest(
         branchId: branchId,
         userId: userId,
@@ -465,9 +461,7 @@ class NotificationService {
   static Map<String, dynamic> _jsonMap(String body) {
     try {
       final decoded = jsonDecode(body);
-      return decoded is Map<String, dynamic>
-          ? decoded
-          : <String, dynamic>{};
+      return decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
     } catch (_) {
       return <String, dynamic>{};
     }
@@ -490,10 +484,7 @@ class NotificationService {
       response['status']?.toString() ??
       (statusCode >= 200 && statusCode < 300 ? 'accepted' : 'rejected');
 
-  static String _providerError(
-    Map<String, dynamic> response,
-    String fallback,
-  ) {
+  static String _providerError(Map<String, dynamic> response, String fallback) {
     final error = response['error'];
     if (error is Map) {
       return error['message']?.toString() ?? error.toString();

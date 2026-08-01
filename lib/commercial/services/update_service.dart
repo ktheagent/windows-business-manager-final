@@ -111,8 +111,7 @@ class UpdateService {
     this._database, {
     http.Client? client,
     PackageInfo? packageInfo,
-    String trustedPublicKeyBase64 =
-        ReleaseSigningKey.ed25519PublicKeyBase64,
+    String trustedPublicKeyBase64 = ReleaseSigningKey.ed25519PublicKeyBase64,
   }) : _client = client ?? http.Client(),
        _packageInfo = packageInfo,
        _trustedPublicKeyBase64 = trustedPublicKeyBase64;
@@ -228,16 +227,16 @@ class UpdateService {
         }
 
         final partialFile = File(partialPath);
-        var existingBytes =
-            await partialFile.exists() ? await partialFile.length() : 0;
+        var existingBytes = await partialFile.exists()
+            ? await partialFile.length()
+            : 0;
         if (existingBytes > info.fileSize) {
           await partialFile.delete();
           existingBytes = 0;
         }
 
         final request = http.Request('GET', info.downloadUrl);
-        request.headers[HttpHeaders.acceptHeader] =
-            'application/octet-stream';
+        request.headers[HttpHeaders.acceptHeader] = 'application/octet-stream';
         request.headers[HttpHeaders.cacheControlHeader] = 'no-cache';
         if (existingBytes > 0) {
           request.headers[HttpHeaders.rangeHeader] = 'bytes=$existingBytes-';
@@ -246,7 +245,8 @@ class UpdateService {
         final response = await _client
             .send(request)
             .timeout(const Duration(seconds: 30));
-        final isResume = existingBytes > 0 &&
+        final isResume =
+            existingBytes > 0 &&
             response.statusCode == HttpStatus.partialContent;
         if (response.statusCode != HttpStatus.ok &&
             response.statusCode != HttpStatus.partialContent) {
@@ -363,10 +363,8 @@ class UpdateService {
     );
   }
 
-  Future<void> _verifyFileSignature(
-    List<int> bytes,
-    String signature,
-  ) => _verifySignature(bytes, signature, label: 'Update installer');
+  Future<void> _verifyFileSignature(List<int> bytes, String signature) =>
+      _verifySignature(bytes, signature, label: 'Update installer');
 
   Future<void> _verifySignature(
     List<int> message,
@@ -422,10 +420,7 @@ class UpdateService {
     }
   }
 
-  static String _requiredString(
-    Map<String, dynamic> data,
-    String key,
-  ) {
+  static String _requiredString(Map<String, dynamic> data, String key) {
     final value = data[key];
     if (value is! String || value.trim().isEmpty) {
       throw FormatException('Update manifest field "$key" is required.');
@@ -433,10 +428,7 @@ class UpdateService {
     return value.trim();
   }
 
-  static int _requiredPositiveInt(
-    Map<String, dynamic> data,
-    String key,
-  ) {
+  static int _requiredPositiveInt(Map<String, dynamic> data, String key) {
     final value = data[key];
     final parsed = value is int
         ? value

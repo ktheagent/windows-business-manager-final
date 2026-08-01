@@ -74,10 +74,9 @@ class BackupService {
       'database_sha256': checksum,
       'database_size': bytes.length,
     };
-    final payload = utf8.encode(jsonEncode({
-      ...manifest,
-      'database_bytes': base64Encode(bytes),
-    }));
+    final payload = utf8.encode(
+      jsonEncode({...manifest, 'database_bytes': base64Encode(bytes)}),
+    );
 
     final salt = _randomBytes(16);
     final algorithm = AesGcm.with256bits();
@@ -87,15 +86,17 @@ class BackupService {
       bits: 256,
     ).deriveKeyFromPassword(password: password, nonce: salt);
     final secretBox = await algorithm.encrypt(payload, secretKey: key);
-    final envelope = utf8.encode(jsonEncode({
-      'magic': _envelopeMagic,
-      'kdf': 'PBKDF2-HMAC-SHA256',
-      'iterations': _kdfIterations,
-      'salt': base64Encode(salt),
-      'nonce': base64Encode(secretBox.nonce),
-      'cipher_text': base64Encode(secretBox.cipherText),
-      'mac': base64Encode(secretBox.mac.bytes),
-    }));
+    final envelope = utf8.encode(
+      jsonEncode({
+        'magic': _envelopeMagic,
+        'kdf': 'PBKDF2-HMAC-SHA256',
+        'iterations': _kdfIterations,
+        'salt': base64Encode(salt),
+        'nonce': base64Encode(secretBox.nonce),
+        'cipher_text': base64Encode(secretBox.cipherText),
+        'mac': base64Encode(secretBox.mac.bytes),
+      }),
+    );
     final backupDirectory = await _resolveBackupDirectory(directoryPath);
     final path = p.join(
       backupDirectory.path,
@@ -301,9 +302,7 @@ class BackupService {
     if (!{'daily', 'weekly', 'custom'}.contains(scheduleType)) {
       throw ArgumentError('Unsupported backup schedule type.');
     }
-    if (intervalCount < 1 ||
-        retentionCount < 1 ||
-        retentionDays < 1) {
+    if (intervalCount < 1 || retentionCount < 1 || retentionDays < 1) {
       throw ArgumentError('Schedule and retention values must be positive.');
     }
     if (!RegExp(r'^(?:[01]\d|2[0-3]):[0-5]\d$').hasMatch(runTime)) {
@@ -386,12 +385,9 @@ class BackupService {
               : schedule['local_folder'] as String,
         );
         await applyRetention(
-          retentionCount:
-              (schedule['retention_count'] as num? ?? 10).toInt(),
-          retentionDays:
-              (schedule['retention_days'] as num? ?? 90).toInt(),
-          destination:
-              schedule['destination'] as String? ?? 'local',
+          retentionCount: (schedule['retention_count'] as num? ?? 10).toInt(),
+          retentionDays: (schedule['retention_days'] as num? ?? 90).toInt(),
+          destination: schedule['destination'] as String? ?? 'local',
         );
         completed++;
         await db.update(
@@ -450,10 +446,7 @@ class BackupService {
       }
       await db.update(
         'backup_records',
-        {
-          'status': 'expired',
-          'error_message': '',
-        },
+        {'status': 'expired', 'error_message': ''},
         where: 'id = ?',
         whereArgs: [row['id']],
       );
@@ -467,8 +460,9 @@ class BackupService {
     final source = File(backupPath);
     if (!await source.exists()) throw StateError('Backup file was not found.');
     final envelopeBytes = await source.readAsBytes();
-    final envelopeSha256 =
-        legacy_crypto.sha256.convert(envelopeBytes).toString();
+    final envelopeSha256 = legacy_crypto.sha256
+        .convert(envelopeBytes)
+        .toString();
     final envelope = jsonDecode(utf8.decode(envelopeBytes));
     if (envelope is! Map<String, dynamic> ||
         envelope['magic'] != _envelopeMagic) {
@@ -491,20 +485,15 @@ class BackupService {
     ).deriveKeyFromPassword(password: password, nonce: salt);
     late final List<int> clearText;
     try {
-      clearText = await AesGcm.with256bits().decrypt(
-        secretBox,
-        secretKey: key,
-      );
+      clearText = await AesGcm.with256bits().decrypt(secretBox, secretKey: key);
     } catch (_) {
       throw StateError('Backup password is incorrect or the file is damaged.');
     }
     final payload = jsonDecode(utf8.decode(clearText));
-    if (payload is! Map<String, dynamic> ||
-        payload['format'] != _format) {
+    if (payload is! Map<String, dynamic> || payload['format'] != _format) {
       throw StateError('Backup content is invalid.');
     }
-    final databaseBytes =
-        base64Decode(payload['database_bytes'] as String);
+    final databaseBytes = base64Decode(payload['database_bytes'] as String);
     final expected = payload['database_sha256'] as String;
     final actual = legacy_crypto.sha256.convert(databaseBytes).toString();
     if (actual != expected) {
@@ -573,13 +562,14 @@ class BackupService {
     DateTime current,
   ) {
     final type = schedule['schedule_type'] as String? ?? 'daily';
-    final interval =
-        max(1, (schedule['interval_count'] as num? ?? 1).toInt()).toInt();
+    final interval = max(
+      1,
+      (schedule['interval_count'] as num? ?? 1).toInt(),
+    ).toInt();
     final runTime = schedule['run_time'] as String? ?? '02:00';
     final timeParts = runTime.split(':');
     final hour = int.tryParse(timeParts.first) ?? 2;
-    final minute =
-        timeParts.length > 1 ? int.tryParse(timeParts[1]) ?? 0 : 0;
+    final minute = timeParts.length > 1 ? int.tryParse(timeParts[1]) ?? 0 : 0;
     DateTime candidate;
     if (type == 'weekly') {
       candidate = current.add(Duration(days: 7 * interval));

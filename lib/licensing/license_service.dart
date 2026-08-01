@@ -157,15 +157,11 @@ class LicenseService {
       token: license.token,
       deviceIdentifier: deviceId,
     );
-    final mergedResponse = <String, dynamic>{
-      ...license.toJson(),
-      ...response,
-    };
+    final mergedResponse = <String, dynamic>{...license.toJson(), ...response};
     final model = LicenseModel.fromJson(mergedResponse);
     await _save(model, mergedResponse);
     return model;
   }
-
 
   Future<String> _resolveAppVersion() async {
     final override = _appVersion?.trim();
@@ -193,10 +189,7 @@ class LicenseService {
     }
   }
 
-  Future<void> _save(
-    LicenseModel model,
-    Map<String, dynamic> response,
-  ) async {
+  Future<void> _save(LicenseModel model, Map<String, dynamic> response) async {
     _cachedLicense = model;
     await _storage.saveCachedLicense(jsonEncode(response));
   }

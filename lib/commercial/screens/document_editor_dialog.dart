@@ -124,7 +124,9 @@ class _CommercialDocumentEditorDialogState
     }
     if (match == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No active product matches that barcode.')),
+        const SnackBar(
+          content: Text('No active product matches that barcode.'),
+        ),
       );
       return;
     }
@@ -153,7 +155,9 @@ class _CommercialDocumentEditorDialogState
     if (!_formKey.currentState!.validate()) return;
     if (_lines.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add at least one product or service line.')),
+        const SnackBar(
+          content: Text('Add at least one product or service line.'),
+        ),
       );
       return;
     }
@@ -171,9 +175,11 @@ class _CommercialDocumentEditorDialogState
   Widget build(BuildContext context) {
     final draft = _buildDraft();
     return AlertDialog(
-      title: Text(widget.initialDraft == null
-          ? 'Create commercial document'
-          : 'Edit commercial document'),
+      title: Text(
+        widget.initialDraft == null
+            ? 'Create commercial document'
+            : 'Edit commercial document',
+      ),
       content: SizedBox(
         width: 980,
         height: MediaQuery.sizeOf(context).height * 0.78,
@@ -189,8 +195,9 @@ class _CommercialDocumentEditorDialogState
                     width: 250,
                     child: DropdownButtonFormField<String>(
                       initialValue: _type,
-                      decoration:
-                          const InputDecoration(labelText: 'Document type'),
+                      decoration: const InputDecoration(
+                        labelText: 'Document type',
+                      ),
                       items: _documentTypes.entries
                           .map(
                             (entry) => DropdownMenuItem(
@@ -219,21 +226,18 @@ class _CommercialDocumentEditorDialogState
                             child: Text(customer.name),
                           ),
                       ],
-                      onChanged: (value) =>
-                          setState(() => _customerId = value),
+                      onChanged: (value) => setState(() => _customerId = value),
                     ),
                   ),
                   _DateField(
                     label: 'Document date',
                     value: _documentDate,
-                    onChanged: (value) =>
-                        setState(() => _documentDate = value),
+                    onChanged: (value) => setState(() => _documentDate = value),
                   ),
                   _DateField(
                     label: 'Validity date',
                     value: _validUntil,
-                    onChanged: (value) =>
-                        setState(() => _validUntil = value),
+                    onChanged: (value) => setState(() => _validUntil = value),
                   ),
                   _DateField(
                     label: 'Due date',
@@ -285,8 +289,7 @@ class _CommercialDocumentEditorDialogState
                       )
                     : ListView.separated(
                         itemCount: _lines.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 8),
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final line = _lines[index];
                           return _LineEditor(
@@ -312,10 +315,12 @@ class _CommercialDocumentEditorDialogState
                     width: 180,
                     child: TextFormField(
                       controller: _overallDiscount,
-                      decoration:
-                          const InputDecoration(labelText: 'Overall discount'),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Overall discount',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       validator: _nonNegativeNumber,
                       onChanged: (_) => setState(() {}),
                     ),
@@ -324,10 +329,12 @@ class _CommercialDocumentEditorDialogState
                     width: 180,
                     child: TextFormField(
                       controller: _overallTax,
-                      decoration:
-                          const InputDecoration(labelText: 'Overall tax amount'),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Overall tax amount',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       validator: _nonNegativeNumber,
                       onChanged: (_) => setState(() {}),
                     ),
@@ -336,8 +343,9 @@ class _CommercialDocumentEditorDialogState
                     width: 300,
                     child: TextFormField(
                       controller: _paymentInstructions,
-                      decoration:
-                          const InputDecoration(labelText: 'Payment instructions'),
+                      decoration: const InputDecoration(
+                        labelText: 'Payment instructions',
+                      ),
                     ),
                   ),
                   SizedBox(
@@ -383,7 +391,9 @@ class _CommercialDocumentEditorDialogState
         FilledButton.icon(
           onPressed: _submit,
           icon: const Icon(Icons.save_outlined),
-          label: Text(widget.initialDraft == null ? 'Save draft' : 'Save changes'),
+          label: Text(
+            widget.initialDraft == null ? 'Save draft' : 'Save changes',
+          ),
         ),
       ],
     );
@@ -424,8 +434,9 @@ class _LineEditor extends StatelessWidget {
                   flex: 3,
                   child: DropdownButtonFormField<int?>(
                     initialValue: line.productId,
-                    decoration:
-                        const InputDecoration(labelText: 'Product / service'),
+                    decoration: const InputDecoration(
+                      labelText: 'Product / service',
+                    ),
                     items: [
                       const DropdownMenuItem<int?>(
                         value: null,
@@ -454,8 +465,7 @@ class _LineEditor extends StatelessWidget {
                   flex: 4,
                   child: TextFormField(
                     controller: line.description,
-                    decoration:
-                        const InputDecoration(labelText: 'Description'),
+                    decoration: const InputDecoration(labelText: 'Description'),
                     validator: (value) => value == null || value.trim().isEmpty
                         ? 'Required'
                         : null,
@@ -624,8 +634,8 @@ class _DateField extends StatelessWidget {
             value == null
                 ? 'Not set'
                 : '${value!.year.toString().padLeft(4, '0')}-'
-                    '${value!.month.toString().padLeft(2, '0')}-'
-                    '${value!.day.toString().padLeft(2, '0')}',
+                      '${value!.month.toString().padLeft(2, '0')}-'
+                      '${value!.day.toString().padLeft(2, '0')}',
           ),
         ),
       ),
@@ -647,34 +657,36 @@ class _LineController {
   });
 
   factory _LineController.fromProduct(Product? product) => _LineController(
-        productId: product?.id,
-        description: TextEditingController(text: product?.name ?? ''),
-        quantity: TextEditingController(text: '1'),
-        unit: TextEditingController(text: 'each'),
-        unitPrice:
-            TextEditingController(text: (product?.sellingPrice ?? 0).toStringAsFixed(2)),
-        costPrice:
-            TextEditingController(text: (product?.costPrice ?? 0).toStringAsFixed(2)),
-        discount: TextEditingController(text: '0.00'),
-        taxRate: TextEditingController(text: '0.00'),
-        taxInclusive: false,
-      );
+    productId: product?.id,
+    description: TextEditingController(text: product?.name ?? ''),
+    quantity: TextEditingController(text: '1'),
+    unit: TextEditingController(text: 'each'),
+    unitPrice: TextEditingController(
+      text: (product?.sellingPrice ?? 0).toStringAsFixed(2),
+    ),
+    costPrice: TextEditingController(
+      text: (product?.costPrice ?? 0).toStringAsFixed(2),
+    ),
+    discount: TextEditingController(text: '0.00'),
+    taxRate: TextEditingController(text: '0.00'),
+    taxInclusive: false,
+  );
 
   factory _LineController.service() => _LineController.fromProduct(null);
 
-  factory _LineController.fromItem(CommercialDocumentItem item) =>
-      _LineController(
-        productId: item.productId,
-        description: TextEditingController(text: item.description),
-        quantity: TextEditingController(text: item.quantity.toString()),
-        unit: TextEditingController(text: item.unit),
-        unitPrice: TextEditingController(text: item.unitPrice.toStringAsFixed(2)),
-        costPrice: TextEditingController(text: item.costPrice.toStringAsFixed(2)),
-        discount:
-            TextEditingController(text: item.lineDiscount.toStringAsFixed(2)),
-        taxRate: TextEditingController(text: item.taxRate.toString()),
-        taxInclusive: item.taxInclusive,
-      );
+  factory _LineController.fromItem(
+    CommercialDocumentItem item,
+  ) => _LineController(
+    productId: item.productId,
+    description: TextEditingController(text: item.description),
+    quantity: TextEditingController(text: item.quantity.toString()),
+    unit: TextEditingController(text: item.unit),
+    unitPrice: TextEditingController(text: item.unitPrice.toStringAsFixed(2)),
+    costPrice: TextEditingController(text: item.costPrice.toStringAsFixed(2)),
+    discount: TextEditingController(text: item.lineDiscount.toStringAsFixed(2)),
+    taxRate: TextEditingController(text: item.taxRate.toString()),
+    taxInclusive: item.taxInclusive,
+  );
 
   final Object identity = Object();
   int? productId;
@@ -697,16 +709,16 @@ class _LineController {
   }
 
   CommercialDocumentItem toItem() => CommercialDocumentItem(
-        productId: productId,
-        description: description.text.trim(),
-        quantity: double.tryParse(quantity.text.trim()) ?? 0,
-        unit: unit.text.trim(),
-        unitPrice: double.tryParse(unitPrice.text.trim()) ?? 0,
-        costPrice: double.tryParse(costPrice.text.trim()) ?? 0,
-        lineDiscount: double.tryParse(discount.text.trim()) ?? 0,
-        taxRate: double.tryParse(taxRate.text.trim()) ?? 0,
-        taxInclusive: taxInclusive,
-      );
+    productId: productId,
+    description: description.text.trim(),
+    quantity: double.tryParse(quantity.text.trim()) ?? 0,
+    unit: unit.text.trim(),
+    unitPrice: double.tryParse(unitPrice.text.trim()) ?? 0,
+    costPrice: double.tryParse(costPrice.text.trim()) ?? 0,
+    lineDiscount: double.tryParse(discount.text.trim()) ?? 0,
+    taxRate: double.tryParse(taxRate.text.trim()) ?? 0,
+    taxInclusive: taxInclusive,
+  );
 
   void dispose() {
     description.dispose();

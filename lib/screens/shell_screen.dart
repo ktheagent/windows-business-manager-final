@@ -247,7 +247,9 @@ class _ShellScreenState extends State<ShellScreen> {
                               decoration: const InputDecoration(
                                 labelText: 'Working branch',
                                 isDense: true,
-                                prefixIcon: Icon(Icons.store_mall_directory_outlined),
+                                prefixIcon: Icon(
+                                  Icons.store_mall_directory_outlined,
+                                ),
                               ),
                               items: state.branches
                                   .where((item) => item.isActive)
@@ -262,14 +264,18 @@ class _ShellScreenState extends State<ShellScreen> {
                                   )
                                   .toList(growable: false),
                               onChanged: (branchId) async {
-                                if (branchId == null || branchId == user.branchId) {
+                                if (branchId == null ||
+                                    branchId == user.branchId) {
                                   return;
                                 }
                                 try {
                                   await state.switchBranch(branchId);
                                   if (!mounted) return;
                                   setState(() => index = 0);
-                                  showSuccess(context, 'Working branch changed.');
+                                  showSuccess(
+                                    context,
+                                    'Working branch changed.',
+                                  );
                                 } catch (error) {
                                   if (mounted) showFailure(context, error);
                                 }
@@ -434,7 +440,10 @@ class _ShellScreenState extends State<ShellScreen> {
       return;
     }
     if (newPin.length < 4) {
-      showFailure(dialogContext, 'The new PIN must contain at least four characters.');
+      showFailure(
+        dialogContext,
+        'The new PIN must contain at least four characters.',
+      );
       return;
     }
     setDialogState(() => setBusy(true));
@@ -529,40 +538,40 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 
   Widget _startupError(BuildContext context, AppState state) => Scaffold(
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 52,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'The application could not start.',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(state.errorMessage!, textAlign: TextAlign.center),
-                    const SizedBox(height: 18),
-                    FilledButton.icon(
-                      onPressed: state.initialize,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Try again'),
-                    ),
-                  ],
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 52,
+                  color: Theme.of(context).colorScheme.error,
                 ),
-              ),
+                const SizedBox(height: 14),
+                Text(
+                  'The application could not start.',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(state.errorMessage!, textAlign: TextAlign.center),
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  onPressed: state.initialize,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try again'),
+                ),
+              ],
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _Destination {

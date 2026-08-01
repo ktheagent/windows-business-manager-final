@@ -19,14 +19,17 @@ class CommercialDocumentService {
     required Map<String, String> settings,
   }) async {
     final db = await _database.database;
-    final documents = await db.rawQuery('''
+    final documents = await db.rawQuery(
+      '''
       SELECT d.*, c.name AS customer_name, c.phone AS customer_phone,
         c.email AS customer_email, b.name AS branch_name, b.address AS branch_address
       FROM documents d
       LEFT JOIN customers c ON c.id = d.customer_id
       INNER JOIN branches b ON b.id = d.branch_id
       WHERE d.id = ?
-    ''', [documentId]);
+    ''',
+      [documentId],
+    );
     if (documents.isEmpty) throw StateError('Document was not found.');
     final document = documents.first;
     final items = await db.query(
@@ -64,7 +67,10 @@ class CommercialDocumentService {
                   children: [
                     pw.Text(
                       businessName,
-                      style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+                      style: pw.TextStyle(
+                        fontSize: 22,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
                     ),
                     pw.Text(settings['business_address'] ?? ''),
                     pw.Text(settings['business_phone'] ?? ''),
@@ -79,7 +85,10 @@ class CommercialDocumentService {
                 children: [
                   pw.Text(
                     _documentTitle(document['document_type'] as String),
-                    style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+                    style: pw.TextStyle(
+                      fontSize: 20,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
                   ),
                   pw.Text('${document['document_no']}'),
                   pw.Text(_date(document['created_at'])),
@@ -102,8 +111,13 @@ class CommercialDocumentService {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('Customer', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text('${document['customer_name'] ?? 'Cash customer'}'),
+                      pw.Text(
+                        'Customer',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      ),
+                      pw.Text(
+                        '${document['customer_name'] ?? 'Cash customer'}',
+                      ),
                       if ('${document['customer_phone'] ?? ''}'.isNotEmpty)
                         pw.Text('${document['customer_phone']}'),
                       if ('${document['customer_email'] ?? ''}'.isNotEmpty)
@@ -115,12 +129,18 @@ class CommercialDocumentService {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text('Branch', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      pw.Text(
+                        'Branch',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      ),
                       pw.Text('${document['branch_name']}'),
                       pw.Text('${document['branch_address'] ?? ''}'),
-                      if (document['due_at'] != null) pw.Text('Due: ${_date(document['due_at'])}'),
+                      if (document['due_at'] != null)
+                        pw.Text('Due: ${_date(document['due_at'])}'),
                       if (document['valid_until'] != null)
-                        pw.Text('Valid until: ${_date(document['valid_until'])}'),
+                        pw.Text(
+                          'Valid until: ${_date(document['valid_until'])}',
+                        ),
                     ],
                   ),
                 ),
@@ -130,64 +150,105 @@ class CommercialDocumentService {
           pw.SizedBox(height: 18),
           pw.TableHelper.fromTextArray(
             headers: const ['Description', 'Qty', 'Unit price', 'Tax', 'Total'],
-            data: items.map((item) => [
-              item['description'],
-              _qty(item['quantity']),
-              _money(item['unit_price']),
-              '${(item['tax_rate'] as num? ?? 0).toStringAsFixed(1)}%',
-              _money(item['line_total']),
-            ]).toList(),
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey100),
+            data: items
+                .map(
+                  (item) => [
+                    item['description'],
+                    _qty(item['quantity']),
+                    _money(item['unit_price']),
+                    '${(item['tax_rate'] as num? ?? 0).toStringAsFixed(1)}%',
+                    _money(item['line_total']),
+                  ],
+                )
+                .toList(),
+            headerDecoration: const pw.BoxDecoration(
+              color: PdfColors.blueGrey100,
+            ),
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            cellPadding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 6),
-            border: pw.TableBorder.all(color: PdfColors.blueGrey200, width: 0.5),
+            cellPadding: const pw.EdgeInsets.symmetric(
+              horizontal: 7,
+              vertical: 6,
+            ),
+            border: pw.TableBorder.all(
+              color: PdfColors.blueGrey200,
+              width: 0.5,
+            ),
           ),
           pw.SizedBox(height: 16),
           pw.Align(
             alignment: pw.Alignment.centerRight,
             child: pw.SizedBox(
               width: 240,
-              child: pw.Column(children: [
-                _totalRow('Subtotal', document['subtotal']),
-                _totalRow('Discount', document['discount']),
-                _totalRow('Tax', document['tax']),
-                pw.Divider(),
-                _totalRow('Total', document['total'], bold: true),
-                if ((document['amount_paid'] as num? ?? 0).toDouble() > 0)
-                  _totalRow('Paid', document['amount_paid']),
-                if ((document['balance_due'] as num? ?? 0).toDouble() > 0)
-                  _totalRow('Balance', document['balance_due'], bold: true),
-              ]),
+              child: pw.Column(
+                children: [
+                  _totalRow('Subtotal', document['subtotal']),
+                  _totalRow('Discount', document['discount']),
+                  _totalRow('Tax', document['tax']),
+                  pw.Divider(),
+                  _totalRow('Total', document['total'], bold: true),
+                  if ((document['amount_paid'] as num? ?? 0).toDouble() > 0)
+                    _totalRow('Paid', document['amount_paid']),
+                  if ((document['balance_due'] as num? ?? 0).toDouble() > 0)
+                    _totalRow('Balance', document['balance_due'], bold: true),
+                ],
+              ),
             ),
           ),
           if ('${document['notes'] ?? ''}'.isNotEmpty) ...[
             pw.SizedBox(height: 20),
-            pw.Text('Notes', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              'Notes',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            ),
             pw.Text('${document['notes']}'),
           ],
           if ('${document['terms'] ?? ''}'.isNotEmpty) ...[
             pw.SizedBox(height: 14),
-            pw.Text('Terms and conditions', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              'Terms and conditions',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            ),
             pw.Text('${document['terms']}'),
           ],
           if ((settings['payment_instructions'] ?? '').isNotEmpty) ...[
             pw.SizedBox(height: 14),
-            pw.Text('Payment instructions', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              'Payment instructions',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            ),
             pw.Text(settings['payment_instructions']!),
           ],
           pw.SizedBox(height: 28),
-          pw.Row(children: [
-            pw.Expanded(child: pw.Divider()),
-            pw.SizedBox(width: 24),
-            pw.Expanded(child: pw.Divider()),
-          ]),
-          pw.Row(children: [
-            pw.Expanded(child: pw.Text('Customer signature', textAlign: pw.TextAlign.center)),
-            pw.SizedBox(width: 24),
-            pw.Expanded(child: pw.Text('Authorized signature', textAlign: pw.TextAlign.center)),
-          ]),
+          pw.Row(
+            children: [
+              pw.Expanded(child: pw.Divider()),
+              pw.SizedBox(width: 24),
+              pw.Expanded(child: pw.Divider()),
+            ],
+          ),
+          pw.Row(
+            children: [
+              pw.Expanded(
+                child: pw.Text(
+                  'Customer signature',
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+              pw.SizedBox(width: 24),
+              pw.Expanded(
+                child: pw.Text(
+                  'Authorized signature',
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+            ],
+          ),
           pw.SizedBox(height: 18),
-          pw.Center(child: pw.Text(settings['document_footer'] ?? 'Thank you for your business.')),
+          pw.Center(
+            child: pw.Text(
+              settings['document_footer'] ?? 'Thank you for your business.',
+            ),
+          ),
         ],
       ),
     );
@@ -228,12 +289,15 @@ class CommercialDocumentService {
     DateTime? to,
   }) async {
     final db = await _database.database;
-    final customers = await db.rawQuery('''
+    final customers = await db.rawQuery(
+      '''
       SELECT c.*, b.name AS branch_name, b.address AS branch_address
       FROM customers c
       INNER JOIN branches b ON b.id = c.branch_id
       WHERE c.id = ? AND c.branch_id = ? AND COALESCE(c.is_active, 1) = 1
-    ''', [customerId, branchId]);
+    ''',
+      [customerId, branchId],
+    );
     if (customers.isEmpty) throw StateError('Customer was not found.');
     final customer = customers.first;
     final where = <String>['customer_id = ?', 'branch_id = ?'];
@@ -288,8 +352,14 @@ class CommercialDocumentService {
         footer: (context) => pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('Generated by Airmonlink Business Manager', style: const pw.TextStyle(fontSize: 8)),
-            pw.Text('Page ${context.pageNumber} of ${context.pagesCount}', style: const pw.TextStyle(fontSize: 8)),
+            pw.Text(
+              'Generated by Airmonlink Business Manager',
+              style: const pw.TextStyle(fontSize: 8),
+            ),
+            pw.Text(
+              'Page ${context.pageNumber} of ${context.pagesCount}',
+              style: const pw.TextStyle(fontSize: 8),
+            ),
           ],
         ),
         build: (_) => [
@@ -307,7 +377,10 @@ class CommercialDocumentService {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('${customer['name']}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      pw.Text(
+                        '${customer['name']}',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      ),
                       pw.Text('${customer['phone'] ?? ''}'),
                       pw.Text('${customer['email'] ?? ''}'),
                     ],
@@ -319,8 +392,13 @@ class CommercialDocumentService {
                     pw.Text('${customer['branch_name']}'),
                     if ('${customer['branch_address'] ?? ''}'.isNotEmpty)
                       pw.Text('${customer['branch_address']}'),
-                    pw.Text('Statement date: ${DateFormat('dd MMM yyyy').format(DateTime.now())}'),
-                    pw.Text('Outstanding: ${_money(customer['balance'])}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    pw.Text(
+                      'Statement date: ${DateFormat('dd MMM yyyy').format(DateTime.now())}',
+                    ),
+                    pw.Text(
+                      'Outstanding: ${_money(customer['balance'])}',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
                   ],
                 ),
               ],
@@ -331,13 +409,28 @@ class CommercialDocumentService {
             pw.Text('No account transactions were recorded in this period.')
           else
             pw.TableHelper.fromTextArray(
-              headers: const ['Date', 'Type', 'Reference', 'Charge', 'Payment', 'Running balance'],
+              headers: const [
+                'Date',
+                'Type',
+                'Reference',
+                'Charge',
+                'Payment',
+                'Running balance',
+              ],
               data: rows,
-              headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey100),
+              headerDecoration: const pw.BoxDecoration(
+                color: PdfColors.blueGrey100,
+              ),
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
               cellStyle: const pw.TextStyle(fontSize: 8),
-              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-              border: pw.TableBorder.all(color: PdfColors.blueGrey200, width: 0.5),
+              cellPadding: const pw.EdgeInsets.symmetric(
+                horizontal: 5,
+                vertical: 5,
+              ),
+              border: pw.TableBorder.all(
+                color: PdfColors.blueGrey200,
+                width: 0.5,
+              ),
             ),
           pw.SizedBox(height: 18),
           pw.Align(
@@ -349,7 +442,10 @@ class CommercialDocumentService {
           ),
           if ((settings['payment_instructions'] ?? '').isNotEmpty) ...[
             pw.SizedBox(height: 18),
-            pw.Text('Payment instructions', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              'Payment instructions',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            ),
             pw.Text(settings['payment_instructions']!),
           ],
         ],
@@ -415,14 +511,19 @@ class CommercialDocumentService {
             width: 62 * PdfPageFormat.mm,
             height: 31 * PdfPageFormat.mm,
             padding: const pw.EdgeInsets.all(6),
-            decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey400),
+            ),
             child: pw.Column(
               mainAxisAlignment: pw.MainAxisAlignment.center,
               children: [
                 pw.Text(
                   '${product['name']}',
                   maxLines: 1,
-                  style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
                 ),
                 pw.SizedBox(height: 3),
                 pw.BarcodeWidget(
@@ -443,7 +544,8 @@ class CommercialDocumentService {
         );
       }
     }
-    if (widgets.isEmpty) throw StateError('Selected products do not have barcodes.');
+    if (widgets.isEmpty)
+      throw StateError('Selected products do not have barcodes.');
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -460,20 +562,34 @@ class CommercialDocumentService {
     return pw.Barcode.code128();
   }
 
-  static pw.Widget _totalRow(String label, Object? value, {bool bold = false}) =>
-      pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 3),
-        child: pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Text(label, style: bold ? pw.TextStyle(fontWeight: pw.FontWeight.bold) : null),
-            pw.Text(_money(value), style: bold ? pw.TextStyle(fontWeight: pw.FontWeight.bold) : null),
-          ],
+  static pw.Widget _totalRow(
+    String label,
+    Object? value, {
+    bool bold = false,
+  }) => pw.Padding(
+    padding: const pw.EdgeInsets.symmetric(vertical: 3),
+    child: pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      children: [
+        pw.Text(
+          label,
+          style: bold ? pw.TextStyle(fontWeight: pw.FontWeight.bold) : null,
         ),
-      );
+        pw.Text(
+          _money(value),
+          style: bold ? pw.TextStyle(fontWeight: pw.FontWeight.bold) : null,
+        ),
+      ],
+    ),
+  );
 
-  static String _setting(Map<String, String> settings, String key, String fallback) =>
-      settings[key]?.trim().isNotEmpty == true ? settings[key]!.trim() : fallback;
+  static String _setting(
+    Map<String, String> settings,
+    String key,
+    String fallback,
+  ) => settings[key]?.trim().isNotEmpty == true
+      ? settings[key]!.trim()
+      : fallback;
 
   static String _documentTitle(String type) => switch (type) {
     'quotation' => 'QUOTATION',
@@ -488,7 +604,9 @@ class CommercialDocumentService {
   static String _date(Object? value) {
     if (value == null) return '';
     final date = DateTime.tryParse('$value');
-    return date == null ? '$value' : DateFormat('dd MMM yyyy').format(date.toLocal());
+    return date == null
+        ? '$value'
+        : DateFormat('dd MMM yyyy').format(date.toLocal());
   }
 
   static String _money(Object? value) =>
@@ -496,6 +614,8 @@ class CommercialDocumentService {
 
   static String _qty(Object? value) {
     final number = (value as num? ?? 0).toDouble();
-    return number == number.roundToDouble() ? number.toInt().toString() : number.toStringAsFixed(2);
+    return number == number.roundToDouble()
+        ? number.toInt().toString()
+        : number.toStringAsFixed(2);
   }
 }

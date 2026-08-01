@@ -269,42 +269,25 @@ class DatabaseService {
         'line_discount': 'REAL NOT NULL DEFAULT 0',
         'tax_inclusive': 'INTEGER NOT NULL DEFAULT 0',
       },
-      'document_payments': {
-        'transaction_ref': "TEXT NOT NULL DEFAULT ''",
-      },
+      'document_payments': {'transaction_ref': "TEXT NOT NULL DEFAULT ''"},
       'purchase_orders': {
         'received_value': 'REAL NOT NULL DEFAULT 0',
         'cancelled_at': 'TEXT',
         'cancelled_by': 'INTEGER',
         'cancellation_reason': "TEXT NOT NULL DEFAULT ''",
       },
-      'goods_receipts': {
-        'transaction_ref': "TEXT NOT NULL DEFAULT ''",
-      },
-      'supplier_payments': {
-        'transaction_ref': "TEXT NOT NULL DEFAULT ''",
-      },
-      'customer_transactions': {
-        'transaction_ref': "TEXT NOT NULL DEFAULT ''",
-      },
+      'goods_receipts': {'transaction_ref': "TEXT NOT NULL DEFAULT ''"},
+      'supplier_payments': {'transaction_ref': "TEXT NOT NULL DEFAULT ''"},
+      'customer_transactions': {'transaction_ref': "TEXT NOT NULL DEFAULT ''"},
       'returns': {
         'status': "TEXT NOT NULL DEFAULT 'completed'",
         'approved_by': 'INTEGER',
         'approved_at': 'TEXT',
       },
-      'return_items': {
-        'item_condition': "TEXT NOT NULL DEFAULT 'saleable'",
-      },
-      'refunds': {
-        'transaction_ref': "TEXT NOT NULL DEFAULT ''",
-      },
-      'cash_sessions': {
-        'approved_by': 'INTEGER',
-        'approved_at': 'TEXT',
-      },
-      'cash_movements': {
-        'transaction_ref': "TEXT NOT NULL DEFAULT ''",
-      },
+      'return_items': {'item_condition': "TEXT NOT NULL DEFAULT 'saleable'"},
+      'refunds': {'transaction_ref': "TEXT NOT NULL DEFAULT ''"},
+      'cash_sessions': {'approved_by': 'INTEGER', 'approved_at': 'TEXT'},
+      'cash_movements': {'transaction_ref': "TEXT NOT NULL DEFAULT ''"},
       'recurring_expenses': {
         'month_end': 'INTEGER NOT NULL DEFAULT 0',
         'last_run_key': "TEXT NOT NULL DEFAULT ''",
@@ -957,48 +940,32 @@ class DatabaseService {
   }
 
   Future<void> _seed(Database db) async {
-    await db.insert(
-      'settings',
-      {
-        'setting_key': 'business_name',
-        'setting_value': 'My Business',
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
-    await db.insert(
-      'settings',
-      {
-        'setting_key': 'business_phone',
-        'setting_value': '',
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
-    await db.insert(
-      'settings',
-      {
-        'setting_key': 'business_address',
-        'setting_value': '',
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    await db.insert('settings', {
+      'setting_key': 'business_name',
+      'setting_value': 'My Business',
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    await db.insert('settings', {
+      'setting_key': 'business_phone',
+      'setting_value': '',
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    await db.insert('settings', {
+      'setting_key': 'business_address',
+      'setting_value': '',
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
   Future<void> _seedCommercialDefaults(Database db) async {
     final now = DateTime.now().toIso8601String();
-    await db.insert(
-      'branches',
-      {
-        'id': defaultBranchId,
-        'name': 'Main Branch',
-        'code': 'MAIN',
-        'address': '',
-        'phone': '',
-        'email': '',
-        'is_active': 1,
-        'created_at': now,
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    await db.insert('branches', {
+      'id': defaultBranchId,
+      'name': 'Main Branch',
+      'code': 'MAIN',
+      'address': '',
+      'phone': '',
+      'email': '',
+      'is_active': 1,
+      'created_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
     final roles = <String, String>{
       'owner': 'Owner',
       'manager': 'Manager',
@@ -1007,11 +974,11 @@ class DatabaseService {
       'stock_officer': 'Stock Officer',
     };
     for (final role in roles.entries) {
-      await db.insert(
-        'roles',
-        {'role_key': role.key, 'label': role.value, 'is_system': 1},
-        conflictAlgorithm: ConflictAlgorithm.ignore,
-      );
+      await db.insert('roles', {
+        'role_key': role.key,
+        'label': role.value,
+        'is_system': 1,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
     final permissions = <String, Set<String>>{
       'owner': _allPermissions,
@@ -1054,28 +1021,33 @@ class DatabaseService {
     };
     for (final role in permissions.entries) {
       for (final permission in role.value) {
-        await db.insert(
-          'role_permissions',
-          {'role_key': role.key, 'permission_key': permission},
-          conflictAlgorithm: ConflictAlgorithm.ignore,
-        );
+        await db.insert('role_permissions', {
+          'role_key': role.key,
+          'permission_key': permission,
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
       }
     }
-    await db.insert(
-      'cash_registers',
-      {'branch_id': defaultBranchId, 'name': 'Main Register', 'is_active': 1},
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
-    await db.execute('''
+    await db.insert('cash_registers', {
+      'branch_id': defaultBranchId,
+      'name': 'Main Register',
+      'is_active': 1,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    await db.execute(
+      '''
       INSERT OR IGNORE INTO branch_inventory
         (branch_id, product_id, stock_qty, low_stock_level, updated_at)
       SELECT ?, id, stock_qty, low_stock_level, ? FROM products
-    ''', [defaultBranchId, now]);
-    await db.execute('''
+    ''',
+      [defaultBranchId, now],
+    );
+    await db.execute(
+      '''
       INSERT OR IGNORE INTO user_branch_access
         (user_id, branch_id, is_primary, granted_by, granted_at)
       SELECT id, branch_id, 1, NULL, ? FROM users
-    ''', [now]);
+    ''',
+      [now],
+    );
     await db.rawUpdate(
       'UPDATE customers SET branch_id = ? WHERE branch_id IS NULL OR branch_id = 0',
       [defaultBranchId],
@@ -1184,17 +1156,13 @@ class DatabaseService {
         where: 'id = ?',
         whereArgs: [product.id],
       );
-      await txn.insert(
-        'branch_inventory',
-        {
-          'branch_id': branchId,
-          'product_id': product.id,
-          'stock_qty': product.stockQty,
-          'low_stock_level': product.lowStockLevel,
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await txn.insert('branch_inventory', {
+        'branch_id': branchId,
+        'product_id': product.id,
+        'stock_qty': product.stockQty,
+        'low_stock_level': product.lowStockLevel,
+        'updated_at': DateTime.now().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     });
   }
 
@@ -1285,7 +1253,8 @@ class DatabaseService {
         'UPDATE ${contact.table} SET balance = MAX(0, balance - ?) WHERE id = ? AND branch_id = ?',
         [amount, contact.id, branchId],
       );
-      if (changed != 1) throw StateError('Contact was not found in this branch.');
+      if (changed != 1)
+        throw StateError('Contact was not found in this branch.');
       if (contact.type == ContactType.customer) {
         await txn.insert('customer_transactions', {
           'customer_id': contact.id,
@@ -1419,7 +1388,9 @@ class DatabaseService {
     if (draft.paymentMethod == 'Credit' && draft.customerId == null) {
       throw ArgumentError('A customer is required for a credit sale.');
     }
-    if (draft.paymentMethod == 'Cash' && userId != null && cashSessionId == null) {
+    if (draft.paymentMethod == 'Cash' &&
+        userId != null &&
+        cashSessionId == null) {
       throw StateError('Open a cash-register session before a cash sale.');
     }
     final db = await database;
@@ -1439,18 +1410,25 @@ class DatabaseService {
           limit: 1,
         );
         if (rows.isEmpty) {
-          throw StateError('${item.productName} is not stocked at this branch.');
+          throw StateError(
+            '${item.productName} is not stocked at this branch.',
+          );
         }
         final available = (rows.first['stock_qty'] as num).toDouble();
-        final expired = Sqflite.firstIntValue(await txn.rawQuery(
-              '''SELECT COUNT(*) FROM product_batches
+        final expired =
+            Sqflite.firstIntValue(
+              await txn.rawQuery(
+                '''SELECT COUNT(*) FROM product_batches
                  WHERE branch_id = ? AND product_id = ? AND quantity > 0
                    AND expires_at IS NOT NULL AND expires_at < ?''',
-              [branchId, item.productId, now.toIso8601String()],
-            )) ??
+                [branchId, item.productId, now.toIso8601String()],
+              ),
+            ) ??
             0;
         if (expired > 0) {
-          throw StateError('${item.productName} has expired stock requiring review.');
+          throw StateError(
+            '${item.productName} has expired stock requiring review.',
+          );
         }
         if (available < item.quantity) {
           throw StateError(
@@ -1565,11 +1543,14 @@ class DatabaseService {
       'SELECT COALESCE(SUM(total - returned_total), 0) AS value, COUNT(*) AS count FROM sales WHERE branch_id = ? AND status = ? AND created_at >= ?',
       [branchId, 'completed', todayStart],
     );
-    final productStats = await db.rawQuery('''
+    final productStats = await db.rawQuery(
+      '''
       SELECT COUNT(*) AS total,
         COALESCE(SUM(CASE WHEN stock_qty <= low_stock_level THEN 1 ELSE 0 END), 0) AS low
       FROM branch_inventory WHERE branch_id = ?
-    ''', [branchId]);
+    ''',
+      [branchId],
+    );
     final customerDebt = await db.rawQuery(
       'SELECT COALESCE(SUM(balance), 0) AS value FROM customers WHERE branch_id = ?',
       [branchId],
@@ -1578,7 +1559,8 @@ class DatabaseService {
       'SELECT COALESCE(SUM(amount), 0) AS value FROM expenses WHERE branch_id = ? AND created_at >= ?',
       [branchId, monthStart],
     );
-    final grossProfit = await db.rawQuery('''
+    final grossProfit = await db.rawQuery(
+      '''
       SELECT COALESCE(SUM(sale_profit), 0) AS value
       FROM (
         SELECT s.id,
@@ -1588,7 +1570,9 @@ class DatabaseService {
         WHERE s.branch_id = ? AND s.status = 'completed' AND s.created_at >= ?
         GROUP BY s.id
       )
-    ''', [branchId, monthStart]);
+    ''',
+      [branchId, monthStart],
+    );
 
     return DashboardMetrics(
       todaySales: _doubleValue(todaySales.first, 'value'),
@@ -1614,11 +1598,10 @@ class DatabaseService {
     final db = await database;
     await db.transaction((txn) async {
       for (final entry in settings.entries) {
-        await txn.insert(
-          'settings',
-          {'setting_key': entry.key, 'setting_value': entry.value},
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        await txn.insert('settings', {
+          'setting_key': entry.key,
+          'setting_value': entry.value,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     });
   }

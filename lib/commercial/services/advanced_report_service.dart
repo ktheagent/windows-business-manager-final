@@ -45,34 +45,34 @@ enum CommercialReportKind {
 
 extension CommercialReportKindLabel on CommercialReportKind {
   String get label => switch (this) {
-        CommercialReportKind.revenue => 'Revenue',
-        CommercialReportKind.grossProfit => 'Gross profit',
-        CommercialReportKind.netProfit => 'Net profit',
-        CommercialReportKind.costOfGoodsSold => 'Cost of goods sold',
-        CommercialReportKind.expenses => 'Expenses',
-        CommercialReportKind.cashFlow => 'Cash flow',
-        CommercialReportKind.customerDebt => 'Customer debt',
-        CommercialReportKind.supplierDebt => 'Supplier debt',
-        CommercialReportKind.salesByProduct => 'Sales by product',
-        CommercialReportKind.salesByCategory => 'Sales by category',
-        CommercialReportKind.salesByUser => 'Sales by user',
-        CommercialReportKind.salesByBranch => 'Sales by branch',
-        CommercialReportKind.profitByProduct => 'Profit by product',
-        CommercialReportKind.profitByCategory => 'Profit by category',
-        CommercialReportKind.profitByUser => 'Profit by user',
-        CommercialReportKind.profitByBranch => 'Profit by branch',
-        CommercialReportKind.returns => 'Returns',
-        CommercialReportKind.refunds => 'Refunds',
-        CommercialReportKind.discounts => 'Discounts',
-        CommercialReportKind.cashVariance => 'Cash variance',
-        CommercialReportKind.stockMovement => 'Stock movement',
-        CommercialReportKind.expiry => 'Expiry',
-        CommercialReportKind.lowStock => 'Low stock',
-        CommercialReportKind.slowMovingStock => 'Slow-moving stock',
-        CommercialReportKind.deadStock => 'Dead stock',
-        CommercialReportKind.purchases => 'Purchases',
-        CommercialReportKind.tax => 'Tax',
-      };
+    CommercialReportKind.revenue => 'Revenue',
+    CommercialReportKind.grossProfit => 'Gross profit',
+    CommercialReportKind.netProfit => 'Net profit',
+    CommercialReportKind.costOfGoodsSold => 'Cost of goods sold',
+    CommercialReportKind.expenses => 'Expenses',
+    CommercialReportKind.cashFlow => 'Cash flow',
+    CommercialReportKind.customerDebt => 'Customer debt',
+    CommercialReportKind.supplierDebt => 'Supplier debt',
+    CommercialReportKind.salesByProduct => 'Sales by product',
+    CommercialReportKind.salesByCategory => 'Sales by category',
+    CommercialReportKind.salesByUser => 'Sales by user',
+    CommercialReportKind.salesByBranch => 'Sales by branch',
+    CommercialReportKind.profitByProduct => 'Profit by product',
+    CommercialReportKind.profitByCategory => 'Profit by category',
+    CommercialReportKind.profitByUser => 'Profit by user',
+    CommercialReportKind.profitByBranch => 'Profit by branch',
+    CommercialReportKind.returns => 'Returns',
+    CommercialReportKind.refunds => 'Refunds',
+    CommercialReportKind.discounts => 'Discounts',
+    CommercialReportKind.cashVariance => 'Cash variance',
+    CommercialReportKind.stockMovement => 'Stock movement',
+    CommercialReportKind.expiry => 'Expiry',
+    CommercialReportKind.lowStock => 'Low stock',
+    CommercialReportKind.slowMovingStock => 'Slow-moving stock',
+    CommercialReportKind.deadStock => 'Dead stock',
+    CommercialReportKind.purchases => 'Purchases',
+    CommercialReportKind.tax => 'Tax',
+  };
 }
 
 class CommercialReportFilter {
@@ -114,20 +114,19 @@ class CommercialReportFilter {
     String? paymentMethod,
     String? documentStatus,
     bool? consolidated,
-  }) =>
-      CommercialReportFilter(
-        from: from ?? this.from,
-        to: to ?? this.to,
-        branchId: branchId ?? this.branchId,
-        userId: userId ?? this.userId,
-        productId: productId ?? this.productId,
-        category: category ?? this.category,
-        customerId: customerId ?? this.customerId,
-        supplierId: supplierId ?? this.supplierId,
-        paymentMethod: paymentMethod ?? this.paymentMethod,
-        documentStatus: documentStatus ?? this.documentStatus,
-        consolidated: consolidated ?? this.consolidated,
-      );
+  }) => CommercialReportFilter(
+    from: from ?? this.from,
+    to: to ?? this.to,
+    branchId: branchId ?? this.branchId,
+    userId: userId ?? this.userId,
+    productId: productId ?? this.productId,
+    category: category ?? this.category,
+    customerId: customerId ?? this.customerId,
+    supplierId: supplierId ?? this.supplierId,
+    paymentMethod: paymentMethod ?? this.paymentMethod,
+    documentStatus: documentStatus ?? this.documentStatus,
+    consolidated: consolidated ?? this.consolidated,
+  );
 
   factory CommercialReportFilter.period(String period, {DateTime? now}) {
     final current = now ?? DateTime.now();
@@ -215,54 +214,174 @@ class AdvancedReportService {
       CommercialReportKind.revenue ||
       CommercialReportKind.grossProfit ||
       CommercialReportKind.netProfit ||
-      CommercialReportKind.costOfGoodsSold =>
-        _profitSummary(db, actor, kind, filter, effectiveBranch),
-      CommercialReportKind.expenses =>
-        _expenses(db, actor, filter, effectiveBranch),
-      CommercialReportKind.cashFlow =>
-        _cashFlow(db, actor, filter, effectiveBranch),
-      CommercialReportKind.customerDebt =>
-        _customerDebt(db, actor, filter, effectiveBranch),
-      CommercialReportKind.supplierDebt =>
-        _supplierDebt(db, actor, filter, effectiveBranch),
-      CommercialReportKind.salesByProduct =>
-        _salesDimension(db, actor, kind, filter, effectiveBranch, 'product'),
-      CommercialReportKind.salesByCategory =>
-        _salesDimension(db, actor, kind, filter, effectiveBranch, 'category'),
-      CommercialReportKind.salesByUser =>
-        _salesDimension(db, actor, kind, filter, effectiveBranch, 'user'),
-      CommercialReportKind.salesByBranch =>
-        _salesDimension(db, actor, kind, filter, effectiveBranch, 'branch'),
-      CommercialReportKind.profitByProduct =>
-        _profitDimension(db, actor, kind, filter, effectiveBranch, 'product'),
-      CommercialReportKind.profitByCategory =>
-        _profitDimension(db, actor, kind, filter, effectiveBranch, 'category'),
-      CommercialReportKind.profitByUser =>
-        _profitDimension(db, actor, kind, filter, effectiveBranch, 'user'),
-      CommercialReportKind.profitByBranch =>
-        _profitDimension(db, actor, kind, filter, effectiveBranch, 'branch'),
-      CommercialReportKind.returns =>
-        _returns(db, actor, kind, filter, effectiveBranch, refundsOnly: false),
-      CommercialReportKind.refunds =>
-        _returns(db, actor, kind, filter, effectiveBranch, refundsOnly: true),
-      CommercialReportKind.discounts =>
-        _discounts(db, actor, filter, effectiveBranch),
-      CommercialReportKind.cashVariance =>
-        _cashVariance(db, actor, filter, effectiveBranch),
-      CommercialReportKind.stockMovement =>
-        _stockMovement(db, actor, filter, effectiveBranch),
-      CommercialReportKind.expiry =>
-        _stockStatus(db, actor, kind, filter, effectiveBranch, mode: 'expiry'),
-      CommercialReportKind.lowStock =>
-        _stockStatus(db, actor, kind, filter, effectiveBranch, mode: 'low'),
-      CommercialReportKind.slowMovingStock =>
-        _stockStatus(db, actor, kind, filter, effectiveBranch, mode: 'slow'),
-      CommercialReportKind.deadStock =>
-        _stockStatus(db, actor, kind, filter, effectiveBranch, mode: 'dead'),
-      CommercialReportKind.purchases =>
-        _purchases(db, actor, filter, effectiveBranch),
-      CommercialReportKind.tax =>
-        _tax(db, actor, filter, effectiveBranch),
+      CommercialReportKind.costOfGoodsSold => _profitSummary(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+      ),
+      CommercialReportKind.expenses => _expenses(
+        db,
+        actor,
+        filter,
+        effectiveBranch,
+      ),
+      CommercialReportKind.cashFlow => _cashFlow(
+        db,
+        actor,
+        filter,
+        effectiveBranch,
+      ),
+      CommercialReportKind.customerDebt => _customerDebt(
+        db,
+        actor,
+        filter,
+        effectiveBranch,
+      ),
+      CommercialReportKind.supplierDebt => _supplierDebt(
+        db,
+        actor,
+        filter,
+        effectiveBranch,
+      ),
+      CommercialReportKind.salesByProduct => _salesDimension(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        'product',
+      ),
+      CommercialReportKind.salesByCategory => _salesDimension(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        'category',
+      ),
+      CommercialReportKind.salesByUser => _salesDimension(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        'user',
+      ),
+      CommercialReportKind.salesByBranch => _salesDimension(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        'branch',
+      ),
+      CommercialReportKind.profitByProduct => _profitDimension(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        'product',
+      ),
+      CommercialReportKind.profitByCategory => _profitDimension(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        'category',
+      ),
+      CommercialReportKind.profitByUser => _profitDimension(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        'user',
+      ),
+      CommercialReportKind.profitByBranch => _profitDimension(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        'branch',
+      ),
+      CommercialReportKind.returns => _returns(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        refundsOnly: false,
+      ),
+      CommercialReportKind.refunds => _returns(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        refundsOnly: true,
+      ),
+      CommercialReportKind.discounts => _discounts(
+        db,
+        actor,
+        filter,
+        effectiveBranch,
+      ),
+      CommercialReportKind.cashVariance => _cashVariance(
+        db,
+        actor,
+        filter,
+        effectiveBranch,
+      ),
+      CommercialReportKind.stockMovement => _stockMovement(
+        db,
+        actor,
+        filter,
+        effectiveBranch,
+      ),
+      CommercialReportKind.expiry => _stockStatus(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        mode: 'expiry',
+      ),
+      CommercialReportKind.lowStock => _stockStatus(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        mode: 'low',
+      ),
+      CommercialReportKind.slowMovingStock => _stockStatus(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        mode: 'slow',
+      ),
+      CommercialReportKind.deadStock => _stockStatus(
+        db,
+        actor,
+        kind,
+        filter,
+        effectiveBranch,
+        mode: 'dead',
+      ),
+      CommercialReportKind.purchases => _purchases(
+        db,
+        actor,
+        filter,
+        effectiveBranch,
+      ),
+      CommercialReportKind.tax => _tax(db, actor, filter, effectiveBranch),
     };
   }
 
@@ -309,16 +428,13 @@ class AdvancedReportService {
           };
         })
         .toList(growable: false);
-    final totals = _sumColumns(
-      normalized,
-      const [
-        'revenue',
-        'cost_of_goods',
-        'gross_profit',
-        'expenses',
-        'net_profit',
-      ],
-    );
+    final totals = _sumColumns(normalized, const [
+      'revenue',
+      'cost_of_goods',
+      'gross_profit',
+      'expenses',
+      'net_profit',
+    ]);
     return CommercialReportResult(
       kind: kind,
       columns: const [
@@ -391,8 +507,7 @@ class AdvancedReportService {
       kind: CommercialReportKind.cashFlow,
       columns: const ['period', 'cash_in', 'cash_out', 'net_cash_flow'],
       rows: rows,
-      totals:
-          _sumColumns(rows, const ['cash_in', 'cash_out', 'net_cash_flow']),
+      totals: _sumColumns(rows, const ['cash_in', 'cash_out', 'net_cash_flow']),
       filter: filter,
     );
   }
@@ -505,8 +620,11 @@ class AdvancedReportService {
       kind: kind,
       columns: [key, 'quantity', 'revenue', 'transaction_count'],
       rows: rows,
-      totals:
-          _sumColumns(rows, const ['quantity', 'revenue', 'transaction_count']),
+      totals: _sumColumns(rows, const [
+        'quantity',
+        'revenue',
+        'transaction_count',
+      ]),
       filter: filter,
     );
   }
@@ -551,10 +669,12 @@ class AdvancedReportService {
       kind: kind,
       columns: [key, 'quantity', 'revenue', 'cost_of_goods', 'gross_profit'],
       rows: rows,
-      totals: _sumColumns(
-        rows,
-        const ['quantity', 'revenue', 'cost_of_goods', 'gross_profit'],
-      ),
+      totals: _sumColumns(rows, const [
+        'quantity',
+        'revenue',
+        'cost_of_goods',
+        'gross_profit',
+      ]),
       filter: filter,
     );
   }
@@ -686,10 +806,12 @@ class AdvancedReportService {
         'closing_notes',
       ],
       rows: rows,
-      totals: _sumColumns(
-        rows,
-        const ['opening_float', 'expected_cash', 'actual_cash', 'variance'],
-      ),
+      totals: _sumColumns(rows, const [
+        'opening_float',
+        'expected_cash',
+        'actual_cash',
+        'variance',
+      ]),
       filter: filter,
     );
   }
@@ -792,22 +914,28 @@ class AdvancedReportService {
         );
         break;
       case 'low':
-        where.add('COALESCE(bi.stock_qty, 0) <= '
-            'COALESCE(bi.low_stock_level, p.low_stock_level)');
+        where.add(
+          'COALESCE(bi.stock_qty, 0) <= '
+          'COALESCE(bi.low_stock_level, p.low_stock_level)',
+        );
         break;
       case 'slow':
         where.add('COALESCE(bi.stock_qty, 0) > 0');
-        where.add('NOT EXISTS (SELECT 1 FROM sale_items si '
-            'INNER JOIN sales s ON s.id = si.sale_id '
-            'WHERE si.product_id = p.id AND s.branch_id = bi.branch_id '
-            "AND s.created_at >= datetime('now', '-60 days'))");
+        where.add(
+          'NOT EXISTS (SELECT 1 FROM sale_items si '
+          'INNER JOIN sales s ON s.id = si.sale_id '
+          'WHERE si.product_id = p.id AND s.branch_id = bi.branch_id '
+          "AND s.created_at >= datetime('now', '-60 days'))",
+        );
         break;
       case 'dead':
         where.add('COALESCE(bi.stock_qty, 0) > 0');
-        where.add('NOT EXISTS (SELECT 1 FROM sale_items si '
-            'INNER JOIN sales s ON s.id = si.sale_id '
-            'WHERE si.product_id = p.id AND s.branch_id = bi.branch_id '
-            "AND s.created_at >= datetime('now', '-180 days'))");
+        where.add(
+          'NOT EXISTS (SELECT 1 FROM sale_items si '
+          'INNER JOIN sales s ON s.id = si.sale_id '
+          'WHERE si.product_id = p.id AND s.branch_id = bi.branch_id '
+          "AND s.created_at >= datetime('now', '-180 days'))",
+        );
         break;
     }
     final rows = await db.rawQuery('''
@@ -902,10 +1030,13 @@ class AdvancedReportService {
         'balance_due',
       ],
       rows: rows,
-      totals: _sumColumns(
-        rows,
-        const ['subtotal', 'tax', 'total', 'amount_paid', 'balance_due'],
-      ),
+      totals: _sumColumns(rows, const [
+        'subtotal',
+        'tax',
+        'total',
+        'amount_paid',
+        'balance_due',
+      ]),
       filter: filter,
     );
   }
@@ -954,22 +1085,18 @@ class AdvancedReportService {
         'total',
       ],
       rows: rows,
-      totals: _sumColumns(
-        rows,
-        const [
-          'taxable_amount',
-          'document_tax',
-          'inclusive_tax_component',
-          'total',
-        ],
-      ),
+      totals: _sumColumns(rows, const [
+        'taxable_amount',
+        'document_tax',
+        'inclusive_tax_component',
+        'total',
+      ]),
       filter: filter,
     );
   }
 
   Future<String> exportCsv(CommercialReportResult result) async {
-    final buffer = StringBuffer()
-      ..writeln(result.columns.map(_csv).join(','));
+    final buffer = StringBuffer()..writeln(result.columns.map(_csv).join(','));
     for (final row in result.rows) {
       buffer.writeln(
         result.columns.map((column) => _csv('${row[column] ?? ''}')).join(','),
@@ -1062,8 +1189,9 @@ class AdvancedReportService {
                         .toList(growable: false),
                   )
                   .toList(growable: false),
-              headerDecoration:
-                  const pw.BoxDecoration(color: PdfColors.blueGrey100),
+              headerDecoration: const pw.BoxDecoration(
+                color: PdfColors.blueGrey100,
+              ),
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
               cellStyle: const pw.TextStyle(fontSize: 7),
               cellPadding: const pw.EdgeInsets.all(4),
@@ -1135,14 +1263,18 @@ class AdvancedReportService {
       args.add(filter.paymentMethod!.trim());
     }
     if (filter.productId != null) {
-      where.add('EXISTS (SELECT 1 FROM sale_items sx '
-          'WHERE sx.sale_id = s.id AND sx.product_id = ?)');
+      where.add(
+        'EXISTS (SELECT 1 FROM sale_items sx '
+        'WHERE sx.sale_id = s.id AND sx.product_id = ?)',
+      );
       args.add(filter.productId);
     }
     if ((filter.category ?? '').trim().isNotEmpty) {
-      where.add('EXISTS (SELECT 1 FROM sale_items sx '
-          'INNER JOIN products px ON px.id = sx.product_id '
-          'WHERE sx.sale_id = s.id AND px.category = ?)');
+      where.add(
+        'EXISTS (SELECT 1 FROM sale_items sx '
+        'INNER JOIN products px ON px.id = sx.product_id '
+        'WHERE sx.sale_id = s.id AND px.category = ?)',
+      );
       args.add(filter.category!.trim());
     }
     return _Sql(where.join(' AND '), args);
@@ -1210,10 +1342,7 @@ class AdvancedReportService {
     }
   }
 
-  static void _authorize(
-    StaffUser actor,
-    CommercialReportFilter filter,
-  ) {
+  static void _authorize(StaffUser actor, CommercialReportFilter filter) {
     if (!actor.can(CommercialPermission.reportsView) &&
         !actor.can(CommercialPermission.reportsProfit)) {
       throw StateError('Your staff role cannot view commercial reports.');
@@ -1238,9 +1367,7 @@ class AdvancedReportService {
   ) {
     return {
       for (final column in columns)
-        column: MoneyMath.add(
-          rows.map((row) => _number(row[column])),
-        ),
+        column: MoneyMath.add(rows.map((row) => _number(row[column]))),
     };
   }
 
@@ -1252,24 +1379,27 @@ class AdvancedReportService {
     return '"${text.replaceAll('"', '""')}"';
   }
 
-  static String _safe(String value) =>
-      value.replaceAll(RegExp(r'[^A-Za-z0-9]+'), '-').replaceAll(
-            RegExp(r'^-+|-+$'),
-            '',
-          );
+  static String _safe(String value) => value
+      .replaceAll(RegExp(r'[^A-Za-z0-9]+'), '-')
+      .replaceAll(RegExp(r'^-+|-+$'), '');
 
   static String _stamp() =>
       DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
 
   static String _display(String value) => value
       .split('_')
-      .map((word) =>
-          word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1)}')
+      .map(
+        (word) => word.isEmpty
+            ? word
+            : '${word[0].toUpperCase()}${word.substring(1)}',
+      )
       .join(' ');
 
   static String _periodLabel(CommercialReportFilter filter) {
     final format = DateFormat('dd MMM yyyy');
-    final from = filter.from == null ? 'All dates' : format.format(filter.from!);
+    final from = filter.from == null
+        ? 'All dates'
+        : format.format(filter.from!);
     final to = filter.to == null
         ? 'All dates'
         : format.format(filter.to!.subtract(const Duration(microseconds: 1)));

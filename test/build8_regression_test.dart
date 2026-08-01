@@ -16,37 +16,40 @@ void main() {
       expect(MoneyMath.percent(19.99, 15), 3);
     });
 
-    test('multi-line document totals include discounts and mixed tax modes', () {
-      const draft = CommercialDocumentDraft(
-        type: 'tax_invoice',
-        customerId: null,
-        items: [
-          CommercialDocumentItem(
-            description: 'Exclusive tax service',
-            quantity: 2,
-            unitPrice: 10,
-            costPrice: 0,
-            lineDiscount: 1,
-            taxRate: 15,
-          ),
-          CommercialDocumentItem(
-            description: 'Inclusive tax service',
-            quantity: 1,
-            unitPrice: 11.50,
-            costPrice: 0,
-            taxRate: 15,
-            taxInclusive: true,
-          ),
-        ],
-        discount: 0.50,
-        tax: 0,
-        notes: '',
-        terms: '',
-      );
-      expect(draft.subtotal, 30.50);
-      expect(draft.itemTax, 3.85);
-      expect(draft.total, 32.85);
-    });
+    test(
+      'multi-line document totals include discounts and mixed tax modes',
+      () {
+        const draft = CommercialDocumentDraft(
+          type: 'tax_invoice',
+          customerId: null,
+          items: [
+            CommercialDocumentItem(
+              description: 'Exclusive tax service',
+              quantity: 2,
+              unitPrice: 10,
+              costPrice: 0,
+              lineDiscount: 1,
+              taxRate: 15,
+            ),
+            CommercialDocumentItem(
+              description: 'Inclusive tax service',
+              quantity: 1,
+              unitPrice: 11.50,
+              costPrice: 0,
+              taxRate: 15,
+              taxInclusive: true,
+            ),
+          ],
+          discount: 0.50,
+          tax: 0,
+          notes: '',
+          terms: '',
+        );
+        expect(draft.subtotal, 30.50);
+        expect(draft.itemTax, 3.85);
+        expect(draft.total, 32.85);
+      },
+    );
   });
 
   group('Build 8 commercial integrity', () {
@@ -69,213 +72,241 @@ void main() {
 
     test('production database starts without demo business records', () async {
       final db = await database.database;
-      expect(SqfliteFirstInt.value(await db.rawQuery('SELECT COUNT(*) FROM sales')), 0);
-      expect(SqfliteFirstInt.value(await db.rawQuery('SELECT COUNT(*) FROM customers')), 0);
-      expect(SqfliteFirstInt.value(await db.rawQuery('SELECT COUNT(*) FROM suppliers')), 0);
+      expect(
+        SqfliteFirstInt.value(await db.rawQuery('SELECT COUNT(*) FROM sales')),
+        0,
+      );
+      expect(
+        SqfliteFirstInt.value(
+          await db.rawQuery('SELECT COUNT(*) FROM customers'),
+        ),
+        0,
+      );
+      expect(
+        SqfliteFirstInt.value(
+          await db.rawQuery('SELECT COUNT(*) FROM suppliers'),
+        ),
+        0,
+      );
     });
 
-    test('temporary staff PIN must be changed and old PIN stops working', () async {
-      final userId = await commercial.createStaff(
-        actor: owner,
-        branchId: owner.branchId,
-        name: 'Cashier',
-        username: 'cashier',
-        pin: '1111',
-        role: StaffRole.cashier,
-        forcePinChange: true,
-      );
-      var cashier = await commercial.login(username: 'cashier', pin: '1111');
-      expect(cashier.forcePinChange, isTrue);
-      await commercial.changeOwnPin(
-        actor: cashier,
-        currentPin: '1111',
-        newPin: '7391',
-      );
-      await commercial.endStaffSession(cashier);
-      await expectLater(
-        commercial.login(username: 'cashier', pin: '1111'),
-        throwsStateError,
-      );
-      cashier = await commercial.login(username: 'cashier', pin: '7391');
-      expect(cashier.id, userId);
-      expect(cashier.forcePinChange, isFalse);
-    });
+    test(
+      'temporary staff PIN must be changed and old PIN stops working',
+      () async {
+        final userId = await commercial.createStaff(
+          actor: owner,
+          branchId: owner.branchId,
+          name: 'Cashier',
+          username: 'cashier',
+          pin: '1111',
+          role: StaffRole.cashier,
+          forcePinChange: true,
+        );
+        var cashier = await commercial.login(username: 'cashier', pin: '1111');
+        expect(cashier.forcePinChange, isTrue);
+        await commercial.changeOwnPin(
+          actor: cashier,
+          currentPin: '1111',
+          newPin: '7391',
+        );
+        await commercial.endStaffSession(cashier);
+        await expectLater(
+          commercial.login(username: 'cashier', pin: '1111'),
+          throwsStateError,
+        );
+        cashier = await commercial.login(username: 'cashier', pin: '7391');
+        expect(cashier.id, userId);
+        expect(cashier.forcePinChange, isFalse);
+      },
+    );
 
-    test('document draft edit duplicate cancellation and history persist', () async {
-      final product = (await database.getProducts()).single;
-      final firstDraft = CommercialDocumentDraft(
-        type: 'quotation',
-        customerId: null,
-        items: [
-          CommercialDocumentItem(
-            productId: product.id,
-            description: product.name,
-            quantity: 1,
-            unitPrice: 10,
-            costPrice: 5,
-          ),
-        ],
-        discount: 0,
-        tax: 0,
-        notes: 'Initial',
-        terms: 'Seven days',
-      );
-      final documentId = await commercial.createDocument(
-        actor: owner,
-        draft: firstDraft,
-      );
-      await commercial.updateDocumentDraft(
-        actor: owner,
-        documentId: documentId,
-        draft: CommercialDocumentDraft(
+    test(
+      'document draft edit duplicate cancellation and history persist',
+      () async {
+        final product = (await database.getProducts()).single;
+        final firstDraft = CommercialDocumentDraft(
           type: 'quotation',
           customerId: null,
           items: [
             CommercialDocumentItem(
               productId: product.id,
               description: product.name,
-              quantity: 2,
+              quantity: 1,
               unitPrice: 10,
               costPrice: 5,
-              lineDiscount: 1,
             ),
           ],
           discount: 0,
           tax: 0,
-          notes: 'Revised',
-          terms: 'Fourteen days',
-        ),
-      );
-      final copyId = await commercial.duplicateDocument(
-        actor: owner,
-        documentId: documentId,
-      );
-      await commercial.cancelDocument(
-        actor: owner,
-        documentId: documentId,
-        reason: 'Customer changed request',
-      );
-      final db = await database.database;
-      final original = (await db.query(
-        'documents',
-        where: 'id = ?',
-        whereArgs: [documentId],
-      )).single;
-      final copy = (await db.query(
-        'documents',
-        where: 'id = ?',
-        whereArgs: [copyId],
-      )).single;
-      expect(original['status'], 'cancelled');
-      expect((original['total'] as num).toDouble(), 19);
-      expect(copy['status'], 'draft');
-      expect(copy['duplicated_from_id'], documentId);
-      final history = await commercial.documentStatusHistory(
-        actor: owner,
-        documentId: documentId,
-      );
-      expect(history.map((row) => row['new_status']), contains('cancelled'));
-    });
+          notes: 'Initial',
+          terms: 'Seven days',
+        );
+        final documentId = await commercial.createDocument(
+          actor: owner,
+          draft: firstDraft,
+        );
+        await commercial.updateDocumentDraft(
+          actor: owner,
+          documentId: documentId,
+          draft: CommercialDocumentDraft(
+            type: 'quotation',
+            customerId: null,
+            items: [
+              CommercialDocumentItem(
+                productId: product.id,
+                description: product.name,
+                quantity: 2,
+                unitPrice: 10,
+                costPrice: 5,
+                lineDiscount: 1,
+              ),
+            ],
+            discount: 0,
+            tax: 0,
+            notes: 'Revised',
+            terms: 'Fourteen days',
+          ),
+        );
+        final copyId = await commercial.duplicateDocument(
+          actor: owner,
+          documentId: documentId,
+        );
+        await commercial.cancelDocument(
+          actor: owner,
+          documentId: documentId,
+          reason: 'Customer changed request',
+        );
+        final db = await database.database;
+        final original = (await db.query(
+          'documents',
+          where: 'id = ?',
+          whereArgs: [documentId],
+        )).single;
+        final copy = (await db.query(
+          'documents',
+          where: 'id = ?',
+          whereArgs: [copyId],
+        )).single;
+        expect(original['status'], 'cancelled');
+        expect((original['total'] as num).toDouble(), 19);
+        expect(copy['status'], 'draft');
+        expect(copy['duplicated_from_id'], documentId);
+        final history = await commercial.documentStatusHistory(
+          actor: owner,
+          documentId: documentId,
+        );
+        expect(history.map((row) => row['new_status']), contains('cancelled'));
+      },
+    );
 
-    test('purchase receipt transaction reference prevents duplicate posting', () async {
-      final product = (await database.getProducts()).single;
-      final supplierId = await database.addContact(
-        BusinessContact(
-          id: null,
-          type: ContactType.supplier,
-          name: 'Supplier',
-          phone: '',
-          email: '',
-          balance: 0,
-          createdAt: DateTime.now(),
-        ),
-      );
-      final orderId = await commercial.createPurchaseOrder(
-        actor: owner,
-        supplierId: supplierId,
-        items: [
-          {
-            'product_id': product.id,
-            'description': product.name,
-            'quantity': 5.0,
-            'unit_cost': 5.0,
-            'tax_rate': 0.0,
-          },
-        ],
-      );
-      final item = (await commercial.purchaseOrderItems(
-        actor: owner,
-        purchaseOrderId: orderId,
-      )).single;
-      await commercial.receivePurchaseOrder(
-        actor: owner,
-        purchaseOrderId: orderId,
-        quantitiesByItemId: {item['id'] as int: 2},
-        transactionRef: 'GRN-IDEMPOTENCY-1',
-      );
-      final stockAfterFirst = (await database.getProducts()).single.stockQty;
-      await expectLater(
-        commercial.receivePurchaseOrder(
+    test(
+      'purchase receipt transaction reference prevents duplicate posting',
+      () async {
+        final product = (await database.getProducts()).single;
+        final supplierId = await database.addContact(
+          BusinessContact(
+            id: null,
+            type: ContactType.supplier,
+            name: 'Supplier',
+            phone: '',
+            email: '',
+            balance: 0,
+            createdAt: DateTime.now(),
+          ),
+        );
+        final orderId = await commercial.createPurchaseOrder(
+          actor: owner,
+          supplierId: supplierId,
+          items: [
+            {
+              'product_id': product.id,
+              'description': product.name,
+              'quantity': 5.0,
+              'unit_cost': 5.0,
+              'tax_rate': 0.0,
+            },
+          ],
+        );
+        final item = (await commercial.purchaseOrderItems(
           actor: owner,
           purchaseOrderId: orderId,
-          quantitiesByItemId: {item['id'] as int: 1},
+        )).single;
+        await commercial.receivePurchaseOrder(
+          actor: owner,
+          purchaseOrderId: orderId,
+          quantitiesByItemId: {item['id'] as int: 2},
           transactionRef: 'GRN-IDEMPOTENCY-1',
-        ),
-        throwsA(anything),
-      );
-      expect((await database.getProducts()).single.stockQty, stockAfterFirst);
-    });
+        );
+        final stockAfterFirst = (await database.getProducts()).single.stockQty;
+        await expectLater(
+          commercial.receivePurchaseOrder(
+            actor: owner,
+            purchaseOrderId: orderId,
+            quantitiesByItemId: {item['id'] as int: 1},
+            transactionRef: 'GRN-IDEMPOTENCY-1',
+          ),
+          throwsA(anything),
+        );
+        expect((await database.getProducts()).single.stockQty, stockAfterFirst);
+      },
+    );
 
-    test('partial transfer records discrepancies and controlled reversal', () async {
-      final product = (await database.getProducts()).single;
-      final initialSource = product.stockQty;
-      final destinationId = await commercial.createBranch(
-        actor: owner,
-        name: 'Destination',
-        code: 'DST',
-      );
-      final transferId = await commercial.createStockTransfer(
-        actor: owner,
-        destinationBranchId: destinationId,
-        quantitiesByProductId: {product.id!: 5},
-      );
-      await commercial.approveStockTransfer(
-        actor: owner,
-        transferId: transferId,
-        reason: 'Stock verified',
-      );
-      await commercial.dispatchStockTransfer(
-        actor: owner,
-        transferId: transferId,
-      );
-      final destinationOwner = owner.copyWith(branchId: destinationId);
-      await commercial.receiveStockTransfer(
-        actor: destinationOwner,
-        transferId: transferId,
-        receivedByProductId: {product.id!: 3},
-        damagedByProductId: {product.id!: 1},
-        missingByProductId: {product.id!: 1},
-        discrepancyReasons: {product.id!: 'One damaged and one missing'},
-      );
-      var transfer = (await commercial.listStockTransfers(owner)).single;
-      expect(transfer['status'], 'completed');
-      final destinationStock = (await database.getProducts(
-        branchId: destinationId,
-      )).single.stockQty;
-      expect(destinationStock, 3);
-      await commercial.reverseStockTransfer(
-        actor: owner,
-        transferId: transferId,
-        reason: 'Approved correction',
-      );
-      transfer = (await commercial.listStockTransfers(owner)).single;
-      expect(transfer['status'], 'reversed');
-      expect((await database.getProducts()).single.stockQty, initialSource - 2);
-      expect(
-        (await database.getProducts(branchId: destinationId)).single.stockQty,
-        0,
-      );
-    });
+    test(
+      'partial transfer records discrepancies and controlled reversal',
+      () async {
+        final product = (await database.getProducts()).single;
+        final initialSource = product.stockQty;
+        final destinationId = await commercial.createBranch(
+          actor: owner,
+          name: 'Destination',
+          code: 'DST',
+        );
+        final transferId = await commercial.createStockTransfer(
+          actor: owner,
+          destinationBranchId: destinationId,
+          quantitiesByProductId: {product.id!: 5},
+        );
+        await commercial.approveStockTransfer(
+          actor: owner,
+          transferId: transferId,
+          reason: 'Stock verified',
+        );
+        await commercial.dispatchStockTransfer(
+          actor: owner,
+          transferId: transferId,
+        );
+        final destinationOwner = owner.copyWith(branchId: destinationId);
+        await commercial.receiveStockTransfer(
+          actor: destinationOwner,
+          transferId: transferId,
+          receivedByProductId: {product.id!: 3},
+          damagedByProductId: {product.id!: 1},
+          missingByProductId: {product.id!: 1},
+          discrepancyReasons: {product.id!: 'One damaged and one missing'},
+        );
+        var transfer = (await commercial.listStockTransfers(owner)).single;
+        expect(transfer['status'], 'completed');
+        final destinationStock = (await database.getProducts(
+          branchId: destinationId,
+        )).single.stockQty;
+        expect(destinationStock, 3);
+        await commercial.reverseStockTransfer(
+          actor: owner,
+          transferId: transferId,
+          reason: 'Approved correction',
+        );
+        transfer = (await commercial.listStockTransfers(owner)).single;
+        expect(transfer['status'], 'reversed');
+        expect(
+          (await database.getProducts()).single.stockQty,
+          initialSource - 2,
+        );
+        expect(
+          (await database.getProducts(branchId: destinationId)).single.stockQty,
+          0,
+        );
+      },
+    );
 
     test('recurring automatic posting is idempotent for one due key', () async {
       final due = DateTime(2026, 7, 1);
