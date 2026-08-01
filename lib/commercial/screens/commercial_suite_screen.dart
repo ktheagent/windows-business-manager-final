@@ -2953,7 +2953,7 @@ class _PremiumToolsPanel extends StatelessWidget {
 
   Future<void> _restore(BuildContext context) async {
     try {
-      final selection = await FilePicker.platform.pickFiles(
+      final selection = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['abmbackup'],
       );
@@ -3047,7 +3047,7 @@ class _PremiumToolsPanel extends StatelessWidget {
 
   Future<void> _import(BuildContext context) async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv', 'xlsx'],
       );

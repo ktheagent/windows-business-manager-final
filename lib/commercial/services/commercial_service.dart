@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:sqflite_common/utils/utils.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../core/money.dart';
@@ -21,10 +22,7 @@ class CommercialService {
   Future<bool> hasStaffUsers() async {
     final db = await _database.database;
     final count =
-        Sqflite.firstIntValue(
-          await db.rawQuery('SELECT COUNT(*) FROM users'),
-        ) ??
-        0;
+        firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM users')) ?? 0;
     return count > 0;
   }
 
@@ -36,10 +34,7 @@ class CommercialService {
     final db = await _database.database;
     return db.transaction((txn) async {
       final count =
-          Sqflite.firstIntValue(
-            await txn.rawQuery('SELECT COUNT(*) FROM users'),
-          ) ??
-          0;
+          firstIntValue(await txn.rawQuery('SELECT COUNT(*) FROM users')) ?? 0;
       if (count > 0) throw StateError('The owner account already exists.');
       final now = DateTime.now().toIso8601String();
       final id = await txn.insert('users', {
@@ -222,6 +217,7 @@ class CommercialService {
         'username': username.trim(),
         'pin_hash': _security.hashPin(pin),
         'role': role.databaseValue,
+        'force_pin_change': forcePinChange ? 1 : 0,
         'is_active': 1,
         'created_at': now,
         'updated_at': now,
@@ -569,7 +565,7 @@ class CommercialService {
       final ids = branchIds.toList()..sort();
       final placeholders = List.filled(ids.length, '?').join(',');
       final active =
-          Sqflite.firstIntValue(
+          firstIntValue(
             await txn.rawQuery(
               'SELECT COUNT(*) FROM branches '
               'WHERE is_active = 1 AND id IN ($placeholders)',
@@ -638,7 +634,7 @@ class CommercialService {
     if (actor.role == StaffRole.owner) return true;
     final db = await _database.database;
     final count =
-        Sqflite.firstIntValue(
+        firstIntValue(
           await db.rawQuery(
             '''
             SELECT COUNT(*)
@@ -874,7 +870,7 @@ class CommercialService {
       if (rows.isEmpty) throw StateError('Branch was not found.');
       if (!active) {
         final openCash =
-            Sqflite.firstIntValue(
+            firstIntValue(
               await txn.rawQuery(
                 '''
           SELECT COUNT(*) FROM cash_sessions
@@ -885,7 +881,7 @@ class CommercialService {
             ) ??
             0;
         final openTransfers =
-            Sqflite.firstIntValue(
+            firstIntValue(
               await txn.rawQuery(
                 '''
           SELECT COUNT(*) FROM stock_transfers
@@ -975,7 +971,7 @@ class CommercialService {
     await db.transaction((txn) async {
       if (!active) {
         final open =
-            Sqflite.firstIntValue(
+            firstIntValue(
               await txn.rawQuery(
                 'SELECT COUNT(*) FROM cash_sessions '
                 'WHERE register_id = ? AND status = ?',
@@ -1036,7 +1032,7 @@ class CommercialService {
     _require(actor, CommercialPermission.cashManage);
     final db = await _database.database;
     final visible =
-        Sqflite.firstIntValue(
+        firstIntValue(
           await db.rawQuery(
             'SELECT COUNT(*) FROM cash_sessions '
             'WHERE id = ? AND branch_id = ?',
@@ -1709,7 +1705,7 @@ class CommercialService {
     _require(actor, CommercialPermission.documentsManage);
     final db = await _database.database;
     final exists =
-        Sqflite.firstIntValue(
+        firstIntValue(
           await db.rawQuery(
             'SELECT COUNT(*) FROM documents '
             'WHERE id = ? AND branch_id = ?',
@@ -2005,7 +2001,7 @@ class CommercialService {
           ? transactionReference!.trim()
           : _number('PAY', now);
       final duplicate =
-          Sqflite.firstIntValue(
+          firstIntValue(
             await txn.rawQuery(
               'SELECT COUNT(*) FROM document_payments '
               'WHERE transaction_ref = ?',
@@ -2796,7 +2792,7 @@ class CommercialService {
       if (counts.isEmpty)
         throw StateError('Stock count is not awaiting approval.');
       final missing =
-          Sqflite.firstIntValue(
+          firstIntValue(
             await txn.rawQuery(
               'SELECT COUNT(*) FROM stock_count_items WHERE stock_count_id = ? AND counted_qty IS NULL',
               [stockCountId],
@@ -3792,7 +3788,7 @@ class CommercialService {
   }) async {
     final db = await _database.database;
     final visible =
-        Sqflite.firstIntValue(
+        firstIntValue(
           await db.rawQuery(
             '''
       SELECT COUNT(*) FROM stock_transfers

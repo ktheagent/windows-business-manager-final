@@ -295,8 +295,8 @@ class NotificationService {
     Object? lastError;
     for (var attempt = 1; attempt <= retries + 1; attempt++) {
       try {
-        final result = await send(message, server);
-        final sent = result.isNotEmpty;
+        await send(message, server);
+        const sent = true;
         await _log(
           channel: 'email',
           recipient: recipient.trim(),

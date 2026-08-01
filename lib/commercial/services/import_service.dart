@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:excel/excel.dart';
@@ -168,7 +167,6 @@ class ImportService {
       final workbook = Excel.decodeBytes(await file.readAsBytes());
       if (workbook.tables.isEmpty) return const [];
       final sheet = workbook.tables.values.first;
-      if (sheet == null) return const [];
       return sheet.rows
           .map(
             (row) => row.map((cell) => cell?.value?.toString() ?? '').toList(),

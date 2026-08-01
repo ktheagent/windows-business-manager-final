@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqflite_common/utils/utils.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../core/app_constants.dart';
@@ -1416,7 +1417,7 @@ class DatabaseService {
         }
         final available = (rows.first['stock_qty'] as num).toDouble();
         final expired =
-            Sqflite.firstIntValue(
+            firstIntValue(
               await txn.rawQuery(
                 '''SELECT COUNT(*) FROM product_batches
                  WHERE branch_id = ? AND product_id = ? AND quantity > 0

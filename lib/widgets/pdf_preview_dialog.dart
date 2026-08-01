@@ -108,7 +108,6 @@ class AppPdfPreviewDialog extends StatelessWidget {
         dynamicLayout: dynamicLayout,
         usePrinterSettings: true,
         forceCustomPrintPaper: forceCustomPrintPaper,
-        windowsModernDialog: true,
       );
     } catch (error) {
       if (!context.mounted) return;
