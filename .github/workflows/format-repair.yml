@@ -18,6 +18,7 @@ concurrency:
 jobs:
   repair:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -31,13 +32,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Resolve dependencies
-        run: flutter pub get
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
 
       - name: Apply deterministic compatibility repairs
         run: python3 tool/apply_build8_syntax_repair.py
 
-      - name: Apply supported Dart analyzer fixes
+      - name: Apply supported analyzer fixes
         run: dart fix --apply
 
       - name: Format all Dart sources
@@ -46,13 +47,16 @@ jobs:
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
 
-      - name: Commit repaired source and lock file
+      - name: Verify no analyzer errors or warnings
+        run: flutter analyze --no-fatal-infos
+
+      - name: Commit repaired sources
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lib test pubspec.yaml pubspec.lock .github/workflows/windows-build.yml
+          git add lib test pubspec.yaml pubspec.lock
           if git diff --cached --quiet; then
-            echo "No analyzer repair changes were required."
+            echo "No source changes were required."
           else
             git commit -m "Apply Build 8 analyzer fixes"
             git push origin HEAD:main
