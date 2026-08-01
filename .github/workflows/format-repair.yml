@@ -1,4 +1,4 @@
-name: Apply Build 8 syntax and formatting repair
+name: Apply Build 8 analyzer repairs
 
 on:
   workflow_dispatch:
@@ -6,10 +6,14 @@ on:
     paths:
       - tool/apply_build8_syntax_repair.py
       - .github/workflows/format-repair.yml
+      - pubspec.yaml
 
 permissions:
   contents: write
-  actions: write
+
+concurrency:
+  group: build8-analyzer-repair
+  cancel-in-progress: true
 
 jobs:
   repair:
@@ -27,8 +31,14 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Apply deterministic syntax repair
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Apply deterministic compatibility repairs
         run: python3 tool/apply_build8_syntax_repair.py
+
+      - name: Apply supported Dart analyzer fixes
+        run: dart fix --apply
 
       - name: Format all Dart sources
         run: dart format .
@@ -36,17 +46,14 @@ jobs:
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
 
-      - name: Commit repaired sources
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Commit repaired source and lock file
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lib test tool
+          git add lib test pubspec.yaml pubspec.lock
           if git diff --cached --quiet; then
-            echo "No source changes were required."
+            echo "No analyzer repair changes were required."
           else
-            git commit -m "Repair Build 8 Dart syntax and formatting"
+            git commit -m "Apply Build 8 analyzer fixes"
             git push origin HEAD:main
           fi
-          gh workflow run windows-build.yml --ref main
