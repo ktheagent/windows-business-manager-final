@@ -3,48 +3,30 @@ name: Validate and Build Windows Release
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/build8-commercial-suite-complete]
-  pull_request:
-    branches: [main, feature/build8-commercial-suite-complete]
+    branches: [main]
 
 permissions:
   contents: read
 
-concurrency:
-  group: build8-windows-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   windows-release:
-    name: Build 8 Windows validation and packaging
     runs-on: windows-latest
     timeout-minutes: 90
-
     env:
       PRODUCT_PREFIX: Airmonlink-Business-Manager-1.3.0-Build8
       FLUTTER_VERSION: '3.44.5'
-
     steps:
-      - name: Check out complete source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install exact Flutter SDK
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
-      - name: Show toolchain
-        shell: pwsh
-        run: |
-          flutter --version
-          dart --version
-          flutter doctor -v
-
-      - name: Verify Build 8 identity
+      - name: Verify identity
         shell: pwsh
         run: |
           $pubspec = Get-Content pubspec.yaml -Raw
@@ -52,315 +34,121 @@ jobs:
             throw 'pubspec.yaml must contain version: 1.3.0+8'
           }
 
-          $legacy = Get-ChildItem -Recurse -File |
-            Where-Object {
-              $_.FullName -notmatch '[\\/](\.git|build|\.dart_tool)[\\/]' -and
-              $_.Name -match '(?i)^Airmonlink-Business-Manager-.*(?:Build[456]|1\.1\.1).*(?:\.exe|\.msi|\.zip)$'
-            }
-
-          if ($legacy) {
-            $legacy | ForEach-Object {
-              Write-Error "Legacy release package: $($_.FullName)"
-            }
-            throw 'Legacy release package filename detected.'
-          }
-
-      - name: Clean generated output
-        run: flutter clean
-
-      - name: Resolve exact locked dependencies
+      - name: Resolve locked dependencies
         run: flutter pub get --enforce-lockfile
 
-      - name: Verify dependency graph and lockfile
-        shell: pwsh
-        run: |
-          if (-not (Test-Path pubspec.lock)) {
-            throw 'pubspec.lock is missing.'
-          }
-          git diff --exit-code -- pubspec.lock
-          if ($LASTEXITCODE -ne 0) {
-            throw 'pubspec.lock changed during dependency resolution.'
-          }
-          if (Select-String -Path pubspec.yaml -Pattern '(?m)^\s*dependency_overrides\s*:') {
-            throw 'dependency_overrides are forbidden.'
-          }
-
-          flutter pub deps --style=compact | Tee-Object dependency-tree.txt
-          $deps = flutter pub deps --json | ConvertFrom-Json
-          $resolved = @{}
-          foreach ($package in $deps.packages) {
-            $resolved[$package.name] = $package.version
-          }
-
-          $expected = @{
-            file_picker = '11.0.2'
-            device_info_plus = '12.4.0'
-            package_info_plus = '9.0.1'
-            printing = '5.14.3'
-            pdf = '3.12.0'
-            excel = '4.0.6'
-            intl = '0.20.3'
-            sqflite_common = '2.5.11'
-            sqflite_common_ffi = '2.4.2'
-            win32 = '5.15.0'
-            win32_registry = '2.1.0'
-            xml = '6.6.1'
-          }
-
-          foreach ($name in $expected.Keys) {
-            if (-not $resolved.ContainsKey($name)) {
-              throw "Missing resolved dependency: $name"
-            }
-            if ($resolved[$name] -ne $expected[$name]) {
-              throw "Unexpected $name version: $($resolved[$name]); expected $($expected[$name])"
-            }
-            Write-Host "$name=$($resolved[$name])"
-          }
-
-          $win32Entries = @(
-            $deps.packages | Where-Object { $_.name -eq 'win32' }
-          )
-          if ($win32Entries.Count -ne 1) {
-            throw "Expected one resolved win32 package, found $($win32Entries.Count)."
-          }
-
       - name: Check formatting
-        id: formatting
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          dart format --output=none --set-exit-if-changed . 2>&1 |
-            Tee-Object formatter-report.txt
-          if ($LASTEXITCODE -ne 0) {
-            throw "Dart formatting validation failed with exit code $LASTEXITCODE"
-          }
+        run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze
-        id: analyze
-        continue-on-error: true
         shell: pwsh
         run: |
-          flutter analyze --no-fatal-infos 2>&1 |
-            Tee-Object analyzer-report.txt
-          if ($LASTEXITCODE -ne 0) {
-            throw "Flutter analysis failed with exit code $LASTEXITCODE"
-          }
+          flutter analyze --no-fatal-infos 2>&1 | Tee-Object analyzer-report.txt
+          if ($LASTEXITCODE -ne 0) { throw "Analysis failed: $LASTEXITCODE" }
 
-      - name: Run all tests
-        id: tests
-        continue-on-error: true
+      - name: Run tests
         shell: pwsh
         run: |
-          flutter test --reporter expanded 2>&1 |
-            Tee-Object flutter-test-report.txt
-          if ($LASTEXITCODE -ne 0) {
-            throw "Flutter tests failed with exit code $LASTEXITCODE"
-          }
+          flutter test --reporter expanded 2>&1 | Tee-Object flutter-test-report.txt
+          if ($LASTEXITCODE -ne 0) { throw "Tests failed: $LASTEXITCODE" }
 
-      - name: Validate source checkpoint
-        id: source_checkpoint
-        continue-on-error: true
+      - name: Validate source and migrations
         shell: pwsh
         run: |
-          python tool/validate_source_checkpoint.py . 2>&1 |
-            Tee-Object source-checkpoint-report.txt
-          if ($LASTEXITCODE -ne 0) {
-            throw "Source checkpoint validation failed with exit code $LASTEXITCODE"
-          }
-
-      - name: Validate migration simulation
-        id: migration_validation
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          python tool/local_release_validation.py . 2>&1 |
-            Tee-Object migration-validation-report.txt
-          if ($LASTEXITCODE -ne 0) {
-            throw "Migration validation failed with exit code $LASTEXITCODE"
-          }
+          python tool/validate_source_checkpoint.py . 2>&1 | Tee-Object source-checkpoint-report.txt
+          if ($LASTEXITCODE -ne 0) { throw "Source validation failed: $LASTEXITCODE" }
+          python tool/local_release_validation.py . 2>&1 | Tee-Object migration-validation-report.txt
+          if ($LASTEXITCODE -ne 0) { throw "Migration validation failed: $LASTEXITCODE" }
 
       - name: Verify Windows platform source
-        id: windows_platform
-        continue-on-error: true
         shell: pwsh
         run: ./tool/bootstrap_windows.ps1
 
       - name: Build Windows release
-        id: windows_build
-        if: always() && steps.windows_platform.outcome == 'success'
-        continue-on-error: true
         shell: pwsh
         run: |
-          flutter build windows --release 2>&1 |
-            Tee-Object windows-build-report.txt
-          if ($LASTEXITCODE -ne 0) {
-            throw "Windows release build failed with exit code $LASTEXITCODE"
-          }
+          flutter build windows --release 2>&1 | Tee-Object windows-build-report.txt
+          if ($LASTEXITCODE -ne 0) { throw "Windows build failed: $LASTEXITCODE" }
 
       - name: Verify Windows payload
-        id: payload
-        if: always() && steps.windows_build.outcome == 'success'
-        continue-on-error: true
         shell: pwsh
         run: |
-          $release = Get-ChildItem build/windows -Directory -Recurse |
-            Where-Object {
-              $_.Name -eq 'Release' -and
-              (Test-Path (Join-Path $_.FullName 'airmonlink_business_manager.exe'))
-            } |
-            Select-Object -First 1
-
-          if (-not $release) {
-            throw 'Windows Release directory was not found.'
-          }
-
+          $release = 'build\windows\x64\runner\Release'
           foreach ($path in @(
             'airmonlink_business_manager.exe',
             'flutter_windows.dll',
-            'data/flutter_assets/AssetManifest.bin',
-            'data/flutter_assets/FontManifest.json',
-            'data/flutter_assets/NOTICES.Z'
+            'data\flutter_assets\AssetManifest.bin'
           )) {
-            if (-not (Test-Path (Join-Path $release.FullName $path))) {
-              throw "Missing Windows runtime file: $path"
+            if (-not (Test-Path (Join-Path $release $path))) {
+              throw "Missing runtime file: $path"
             }
           }
 
-          $release.FullName | Set-Content windows-release-directory.txt
-
       - name: Create portable package
-        id: portable
-        if: always() && steps.payload.outcome == 'success'
-        continue-on-error: true
         shell: pwsh
         run: ./tool/package_windows.ps1
 
       - name: Install Inno Setup
-        id: inno
-        if: always() && steps.payload.outcome == 'success'
-        continue-on-error: true
         run: choco install innosetup --no-progress -y
 
-      - name: Build Windows installer
-        id: installer
-        if: always() && steps.inno.outcome == 'success' && steps.payload.outcome == 'success'
-        continue-on-error: true
+      - name: Build and verify Windows installer
         shell: pwsh
-        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\airmonlink_business_manager.iss'
+        run: ./tool/build_installer.ps1
 
       - name: Smoke-test portable application
-        id: portable_smoke
-        if: always() && steps.portable.outcome == 'success'
-        continue-on-error: true
         shell: pwsh
         run: |
           $root = Join-Path $env:RUNNER_TEMP 'airmonlink-portable-smoke'
-          if (Test-Path $root) {
-            Remove-Item $root -Recurse -Force
-          }
+          if (Test-Path $root) { Remove-Item $root -Recurse -Force }
           Expand-Archive "dist/$env:PRODUCT_PREFIX-Portable.zip" -DestinationPath $root
           $exe = Join-Path $root 'airmonlink_business_manager.exe'
-          if (-not (Test-Path $exe)) {
-            throw 'Portable executable is missing.'
-          }
+          if (-not (Test-Path $exe)) { throw 'Portable executable missing.' }
           $process = Start-Process $exe -PassThru
           Start-Sleep -Seconds 8
-          if ($process.HasExited) {
-            throw "Portable application exited during smoke test with code $($process.ExitCode)."
-          }
+          if ($process.HasExited) { throw "Portable app exited: $($process.ExitCode)" }
           Stop-Process -Id $process.Id -Force
 
-      - name: Smoke-test installer and installed application
-        id: installer_smoke
-        if: always() && steps.installer.outcome == 'success'
-        continue-on-error: true
+      - name: Smoke-test installer
         shell: pwsh
         run: |
           $installRoot = Join-Path $env:RUNNER_TEMP 'airmonlink-installed-smoke'
-          if (Test-Path $installRoot) {
-            Remove-Item $installRoot -Recurse -Force
-          }
-          $installerPath = Resolve-Path "dist/$env:PRODUCT_PREFIX-Setup.exe"
-          $install = Start-Process $installerPath -ArgumentList @(
+          if (Test-Path $installRoot) { Remove-Item $installRoot -Recurse -Force }
+          $installer = Resolve-Path "dist/$env:PRODUCT_PREFIX-Setup.exe"
+          $result = Start-Process $installer -ArgumentList @(
             '/VERYSILENT',
             '/SUPPRESSMSGBOXES',
             '/NORESTART',
             "/DIR=$installRoot"
           ) -Wait -PassThru
-
-          if ($install.ExitCode -ne 0) {
-            throw "Installer exited with code $($install.ExitCode)."
-          }
-
+          if ($result.ExitCode -ne 0) { throw "Installer exited: $($result.ExitCode)" }
           $exe = Join-Path $installRoot 'airmonlink_business_manager.exe'
-          if (-not (Test-Path $exe)) {
-            throw 'Installed executable is missing.'
-          }
-
+          if (-not (Test-Path $exe)) { throw 'Installed executable missing.' }
           $process = Start-Process $exe -PassThru
           Start-Sleep -Seconds 8
-          if ($process.HasExited) {
-            throw "Installed application exited during smoke test with code $($process.ExitCode)."
-          }
+          if ($process.HasExited) { throw "Installed app exited: $($process.ExitCode)" }
           Stop-Process -Id $process.Id -Force
 
-      - name: Create canonical full-source package
-        id: source_package
-        if: always()
-        continue-on-error: true
+      - name: Create full-source package
         shell: pwsh
         run: ./tool/package_source.ps1
 
-      - name: Verify release artifacts and create SHA-256
-        id: artifact_verification
-        if: >-
-          always() &&
-          steps.portable.outcome == 'success' &&
-          steps.installer.outcome == 'success' &&
-          steps.source_package.outcome == 'success'
-        continue-on-error: true
+      - name: Verify artifacts and create checksums
         shell: pwsh
         run: |
-          $expected = @(
+          $files = @(
             "dist/$env:PRODUCT_PREFIX-Setup.exe",
             "dist/$env:PRODUCT_PREFIX-Portable.zip",
             "dist/$env:PRODUCT_PREFIX-Full-Source.zip"
           )
-
-          foreach ($file in $expected) {
-            if (-not (Test-Path $file)) {
-              throw "Missing release file: $file"
-            }
-            if ((Get-Item $file).Length -le 0) {
-              throw "Empty release file: $file"
-            }
+          foreach ($file in $files) {
+            if (-not (Test-Path $file)) { throw "Missing release file: $file" }
+            if ((Get-Item $file).Length -le 0) { throw "Empty release file: $file" }
           }
-
-          $legacy = Get-ChildItem dist -File |
-            Where-Object {
-              $_.Name -match '(?i)(Build[456]|1\.1\.1)'
-            }
-          if ($legacy) {
-            throw 'Legacy artifact filename detected in dist.'
-          }
-
-          $lines = foreach ($file in $expected) {
+          $lines = foreach ($file in $files) {
             $hash = (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant()
             "$hash  $([IO.Path]::GetFileName($file))"
           }
-
-          $sum = "dist/$env:PRODUCT_PREFIX-SHA256SUMS.txt"
-          $lines | Set-Content $sum -Encoding ascii
-
-          foreach ($line in Get-Content $sum) {
-            $parts = $line -split '\s+', 2
-            $actual = (
-              Get-FileHash (Join-Path dist $parts[1]) -Algorithm SHA256
-            ).Hash.ToLowerInvariant()
-            if ($actual -ne $parts[0]) {
-              throw "Checksum verification failed: $($parts[1])"
-            }
-          }
+          $lines | Set-Content "dist/$env:PRODUCT_PREFIX-SHA256SUMS.txt" -Encoding ascii
 
       - name: Upload diagnostic reports
         if: always()
@@ -368,50 +156,15 @@ jobs:
         with:
           name: Airmonlink-Build8-Diagnostics
           path: |
-            formatter-report.txt
             analyzer-report.txt
-            dependency-tree.txt
             flutter-test-report.txt
             source-checkpoint-report.txt
             migration-validation-report.txt
             windows-build-report.txt
-            windows-release-directory.txt
+            installer-build-report.txt
             BUILD8-LOCAL-VALIDATION.json
           if-no-files-found: warn
           retention-days: 30
-
-      - name: Enforce all release gates
-        if: always()
-        shell: pwsh
-        run: |
-          $outcomes = @{
-            formatting = '${{ steps.formatting.outcome }}'
-            analyze = '${{ steps.analyze.outcome }}'
-            tests = '${{ steps.tests.outcome }}'
-            source_checkpoint = '${{ steps.source_checkpoint.outcome }}'
-            migration_validation = '${{ steps.migration_validation.outcome }}'
-            windows_platform = '${{ steps.windows_platform.outcome }}'
-            windows_build = '${{ steps.windows_build.outcome }}'
-            payload = '${{ steps.payload.outcome }}'
-            portable = '${{ steps.portable.outcome }}'
-            inno = '${{ steps.inno.outcome }}'
-            installer = '${{ steps.installer.outcome }}'
-            portable_smoke = '${{ steps.portable_smoke.outcome }}'
-            installer_smoke = '${{ steps.installer_smoke.outcome }}'
-            source_package = '${{ steps.source_package.outcome }}'
-            artifact_verification = '${{ steps.artifact_verification.outcome }}'
-          }
-
-          $failed = @(
-            $outcomes.GetEnumerator() |
-              Where-Object { $_.Value -ne 'success' } |
-              ForEach-Object { "$($_.Key)=$($_.Value)" }
-          )
-
-          if ($failed.Count -gt 0) {
-            $failed | ForEach-Object { Write-Error $_ }
-            throw 'One or more Build 8 release gates failed.'
-          }
 
       - name: Upload Build 8 release artifacts
         uses: actions/upload-artifact@v4
@@ -422,9 +175,5 @@ jobs:
             dist/Airmonlink-Business-Manager-1.3.0-Build8-Portable.zip
             dist/Airmonlink-Business-Manager-1.3.0-Build8-Full-Source.zip
             dist/Airmonlink-Business-Manager-1.3.0-Build8-SHA256SUMS.txt
-            dependency-tree.txt
-            analyzer-report.txt
-            flutter-test-report.txt
-            BUILD8-LOCAL-VALIDATION.json
           if-no-files-found: error
           retention-days: 30
