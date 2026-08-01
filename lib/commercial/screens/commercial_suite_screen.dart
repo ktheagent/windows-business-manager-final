@@ -353,7 +353,6 @@ class _DocumentsPanelState extends State<_DocumentsPanel> {
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
                   final document = snapshot.data![index];
-                  final id = document['id'] as int;
                   final type = (document['document_type'] as String).replaceAll(
                     '_',
                     ' ',
