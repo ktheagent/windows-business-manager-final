@@ -1,0 +1,622 @@
+Airmonlink Business Manager 1.3.0+8
+Database schema version: 8
+Application table count: 50
+Generated from lib/services/database_service.dart
+
+[audit_logs]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- branch_id: INTEGER; not_null=False; primary_key=False; default=None
+- action: TEXT; not_null=True; primary_key=False; default=None
+- entity_type: TEXT; not_null=True; primary_key=False; default=None
+- entity_id: TEXT; not_null=True; primary_key=False; default=''
+- old_values: TEXT; not_null=False; primary_key=False; default=None
+- new_values: TEXT; not_null=False; primary_key=False; default=None
+- reason: TEXT; not_null=True; primary_key=False; default=''
+- device_id: TEXT; not_null=True; primary_key=False; default=''
+- success: INTEGER; not_null=True; primary_key=False; default=1
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+
+[backup_records]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- path: TEXT; not_null=True; primary_key=False; default=None
+- checksum: TEXT; not_null=True; primary_key=False; default=None
+- encrypted: INTEGER; not_null=True; primary_key=False; default=0
+- destination: TEXT; not_null=True; primary_key=False; default='local'
+- status: TEXT; not_null=True; primary_key=False; default=None
+- size_bytes: INTEGER; not_null=True; primary_key=False; default=0
+- created_by: INTEGER; not_null=False; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- error_message: TEXT; not_null=True; primary_key=False; default=''
+- verified_at: TEXT; not_null=False; primary_key=False; default=None
+- manifest_json: TEXT; not_null=True; primary_key=False; default=''
+
+[backup_schedules]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- schedule_type: TEXT; not_null=True; primary_key=False; default=None
+- interval_count: INTEGER; not_null=True; primary_key=False; default=1
+- run_time: TEXT; not_null=True; primary_key=False; default='02:00'
+- weekday: INTEGER; not_null=False; primary_key=False; default=None
+- retention_count: INTEGER; not_null=True; primary_key=False; default=10
+- retention_days: INTEGER; not_null=True; primary_key=False; default=90
+- destination: TEXT; not_null=True; primary_key=False; default='local'
+- local_folder: TEXT; not_null=True; primary_key=False; default=''
+- is_enabled: INTEGER; not_null=True; primary_key=False; default=1
+- last_run_at: TEXT; not_null=False; primary_key=False; default=None
+- next_run_at: TEXT; not_null=True; primary_key=False; default=None
+- last_status: TEXT; not_null=True; primary_key=False; default=''
+- last_error: TEXT; not_null=True; primary_key=False; default=''
+- created_by: INTEGER; not_null=False; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- updated_at: TEXT; not_null=True; primary_key=False; default=None
+
+[branch_inventory]
+- branch_id: INTEGER; not_null=True; primary_key=True; default=None
+- product_id: INTEGER; not_null=True; primary_key=True; default=None
+- stock_qty: REAL; not_null=True; primary_key=False; default=0
+- low_stock_level: REAL; not_null=True; primary_key=False; default=5
+- updated_at: TEXT; not_null=True; primary_key=False; default=None
+
+[branches]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- name: TEXT; not_null=True; primary_key=False; default=None
+- code: TEXT; not_null=True; primary_key=False; default=None
+- address: TEXT; not_null=True; primary_key=False; default=''
+- phone: TEXT; not_null=True; primary_key=False; default=''
+- email: TEXT; not_null=True; primary_key=False; default=''
+- is_active: INTEGER; not_null=True; primary_key=False; default=1
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+
+[cash_movements]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- cash_session_id: INTEGER; not_null=True; primary_key=False; default=None
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- movement_type: TEXT; not_null=True; primary_key=False; default=None
+- amount: REAL; not_null=True; primary_key=False; default=None
+- reference_type: TEXT; not_null=True; primary_key=False; default=''
+- reference_id: INTEGER; not_null=False; primary_key=False; default=None
+- note: TEXT; not_null=True; primary_key=False; default=''
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- transaction_ref: TEXT; not_null=True; primary_key=False; default=''
+
+[cash_registers]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- name: TEXT; not_null=True; primary_key=False; default=None
+- is_active: INTEGER; not_null=True; primary_key=False; default=1
+
+[cash_sessions]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- register_id: INTEGER; not_null=True; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- user_id: INTEGER; not_null=True; primary_key=False; default=None
+- opening_float: REAL; not_null=True; primary_key=False; default=0
+- expected_cash: REAL; not_null=False; primary_key=False; default=None
+- actual_cash: REAL; not_null=False; primary_key=False; default=None
+- variance: REAL; not_null=False; primary_key=False; default=None
+- status: TEXT; not_null=True; primary_key=False; default='open'
+- opening_note: TEXT; not_null=True; primary_key=False; default=''
+- closing_note: TEXT; not_null=True; primary_key=False; default=''
+- opened_at: TEXT; not_null=True; primary_key=False; default=None
+- closed_at: TEXT; not_null=False; primary_key=False; default=None
+- approved_by: INTEGER; not_null=False; primary_key=False; default=None
+- approved_at: TEXT; not_null=False; primary_key=False; default=None
+
+[customer_transactions]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- customer_id: INTEGER; not_null=True; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- transaction_type: TEXT; not_null=True; primary_key=False; default=None
+- amount: REAL; not_null=True; primary_key=False; default=None
+- reference_type: TEXT; not_null=True; primary_key=False; default=''
+- reference_id: INTEGER; not_null=False; primary_key=False; default=None
+- note: TEXT; not_null=True; primary_key=False; default=''
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- transaction_ref: TEXT; not_null=True; primary_key=False; default=''
+
+[customers]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- name: TEXT; not_null=True; primary_key=False; default=None
+- phone: TEXT; not_null=True; primary_key=False; default=''
+- email: TEXT; not_null=True; primary_key=False; default=''
+- balance: REAL; not_null=True; primary_key=False; default=0
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=1
+- credit_limit: REAL; not_null=True; primary_key=False; default=0
+- credit_enabled: INTEGER; not_null=True; primary_key=False; default=1
+- is_active: INTEGER; not_null=True; primary_key=False; default=1
+
+[document_items]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- document_id: INTEGER; not_null=True; primary_key=False; default=None
+- product_id: INTEGER; not_null=False; primary_key=False; default=None
+- description: TEXT; not_null=True; primary_key=False; default=None
+- quantity: REAL; not_null=True; primary_key=False; default=None
+- unit_price: REAL; not_null=True; primary_key=False; default=None
+- cost_price: REAL; not_null=True; primary_key=False; default=0
+- tax_rate: REAL; not_null=True; primary_key=False; default=0
+- line_total: REAL; not_null=True; primary_key=False; default=None
+- unit: TEXT; not_null=True; primary_key=False; default='each'
+- line_discount: REAL; not_null=True; primary_key=False; default=0
+- tax_inclusive: INTEGER; not_null=True; primary_key=False; default=0
+
+[document_payments]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- document_id: INTEGER; not_null=True; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- cash_session_id: INTEGER; not_null=False; primary_key=False; default=None
+- amount: REAL; not_null=True; primary_key=False; default=None
+- payment_method: TEXT; not_null=True; primary_key=False; default=None
+- reference: TEXT; not_null=True; primary_key=False; default=''
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- transaction_ref: TEXT; not_null=True; primary_key=False; default=''
+
+[document_status_history]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- document_id: INTEGER; not_null=True; primary_key=False; default=None
+- old_status: TEXT; not_null=True; primary_key=False; default=''
+- new_status: TEXT; not_null=True; primary_key=False; default=None
+- changed_by: INTEGER; not_null=False; primary_key=False; default=None
+- reason: TEXT; not_null=True; primary_key=False; default=''
+- changed_at: TEXT; not_null=True; primary_key=False; default=None
+
+[documents]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- customer_id: INTEGER; not_null=False; primary_key=False; default=None
+- document_no: TEXT; not_null=True; primary_key=False; default=None
+- document_type: TEXT; not_null=True; primary_key=False; default=None
+- status: TEXT; not_null=True; primary_key=False; default='draft'
+- subtotal: REAL; not_null=True; primary_key=False; default=0
+- discount: REAL; not_null=True; primary_key=False; default=0
+- tax: REAL; not_null=True; primary_key=False; default=0
+- total: REAL; not_null=True; primary_key=False; default=0
+- amount_paid: REAL; not_null=True; primary_key=False; default=0
+- balance_due: REAL; not_null=True; primary_key=False; default=0
+- debt_posted: INTEGER; not_null=True; primary_key=False; default=0
+- valid_until: TEXT; not_null=False; primary_key=False; default=None
+- due_at: TEXT; not_null=False; primary_key=False; default=None
+- notes: TEXT; not_null=True; primary_key=False; default=''
+- terms: TEXT; not_null=True; primary_key=False; default=''
+- converted_sale_id: INTEGER; not_null=False; primary_key=False; default=None
+- created_by: INTEGER; not_null=False; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- updated_at: TEXT; not_null=True; primary_key=False; default=None
+- payment_instructions: TEXT; not_null=True; primary_key=False; default=''
+- document_date: TEXT; not_null=False; primary_key=False; default=None
+- cancelled_at: TEXT; not_null=False; primary_key=False; default=None
+- cancelled_by: INTEGER; not_null=False; primary_key=False; default=None
+- cancellation_reason: TEXT; not_null=True; primary_key=False; default=''
+- duplicated_from_id: INTEGER; not_null=False; primary_key=False; default=None
+
+[expenses]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- title: TEXT; not_null=True; primary_key=False; default=None
+- category: TEXT; not_null=True; primary_key=False; default=None
+- amount: REAL; not_null=True; primary_key=False; default=None
+- note: TEXT; not_null=True; primary_key=False; default=''
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=1
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- cash_session_id: INTEGER; not_null=False; primary_key=False; default=None
+- recurring_expense_id: INTEGER; not_null=False; primary_key=False; default=None
+- payment_method: TEXT; not_null=True; primary_key=False; default='Cash'
+
+[goods_receipt_items]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- goods_receipt_id: INTEGER; not_null=True; primary_key=False; default=None
+- purchase_order_item_id: INTEGER; not_null=True; primary_key=False; default=None
+- product_id: INTEGER; not_null=True; primary_key=False; default=None
+- quantity_received: REAL; not_null=True; primary_key=False; default=None
+- unit_cost: REAL; not_null=True; primary_key=False; default=None
+- line_value: REAL; not_null=True; primary_key=False; default=None
+
+[goods_receipts]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- purchase_order_id: INTEGER; not_null=True; primary_key=False; default=None
+- receipt_no: TEXT; not_null=True; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- received_by: INTEGER; not_null=False; primary_key=False; default=None
+- received_at: TEXT; not_null=True; primary_key=False; default=None
+- notes: TEXT; not_null=True; primary_key=False; default=''
+- transaction_ref: TEXT; not_null=True; primary_key=False; default=''
+
+[import_job_errors]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- import_job_id: INTEGER; not_null=True; primary_key=False; default=None
+- row_number: INTEGER; not_null=True; primary_key=False; default=None
+- field_name: TEXT; not_null=True; primary_key=False; default=''
+- source_value: TEXT; not_null=True; primary_key=False; default=''
+- error_message: TEXT; not_null=True; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+
+[import_jobs]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- import_type: TEXT; not_null=True; primary_key=False; default=None
+- source_path: TEXT; not_null=True; primary_key=False; default=None
+- total_rows: INTEGER; not_null=True; primary_key=False; default=0
+- imported_rows: INTEGER; not_null=True; primary_key=False; default=0
+- skipped_rows: INTEGER; not_null=True; primary_key=False; default=0
+- failed_rows: INTEGER; not_null=True; primary_key=False; default=0
+- status: TEXT; not_null=True; primary_key=False; default=None
+- error_report: TEXT; not_null=True; primary_key=False; default=''
+- created_by: INTEGER; not_null=False; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+
+[integration_test_logs]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=False; primary_key=False; default=None
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- integration_type: TEXT; not_null=True; primary_key=False; default=None
+- action: TEXT; not_null=True; primary_key=False; default=None
+- success: INTEGER; not_null=True; primary_key=False; default=None
+- response_code: INTEGER; not_null=False; primary_key=False; default=None
+- message: TEXT; not_null=True; primary_key=False; default=''
+- endpoint_host: TEXT; not_null=True; primary_key=False; default=''
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+
+[notification_logs]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- channel: TEXT; not_null=True; primary_key=False; default=None
+- recipient: TEXT; not_null=True; primary_key=False; default=None
+- document_type: TEXT; not_null=True; primary_key=False; default=''
+- document_id: INTEGER; not_null=False; primary_key=False; default=None
+- status: TEXT; not_null=True; primary_key=False; default=None
+- error_message: TEXT; not_null=True; primary_key=False; default=''
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- provider_message_id: TEXT; not_null=True; primary_key=False; default=''
+- provider_status: TEXT; not_null=True; primary_key=False; default=''
+- attempts: INTEGER; not_null=True; primary_key=False; default=1
+- response_code: INTEGER; not_null=False; primary_key=False; default=None
+
+[product_batches]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- product_id: INTEGER; not_null=True; primary_key=False; default=None
+- batch_no: TEXT; not_null=True; primary_key=False; default=None
+- quantity: REAL; not_null=True; primary_key=False; default=0
+- manufactured_at: TEXT; not_null=False; primary_key=False; default=None
+- expires_at: TEXT; not_null=False; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+
+[products]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- name: TEXT; not_null=True; primary_key=False; default=None
+- sku: TEXT; not_null=True; primary_key=False; default=''
+- barcode: TEXT; not_null=True; primary_key=False; default=''
+- category: TEXT; not_null=True; primary_key=False; default='General'
+- cost_price: REAL; not_null=True; primary_key=False; default=0
+- selling_price: REAL; not_null=True; primary_key=False; default=0
+- stock_qty: REAL; not_null=True; primary_key=False; default=0
+- low_stock_level: REAL; not_null=True; primary_key=False; default=5
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- reorder_quantity: REAL; not_null=True; primary_key=False; default=0
+- preferred_supplier_id: INTEGER; not_null=False; primary_key=False; default=None
+- lead_time_days: INTEGER; not_null=True; primary_key=False; default=0
+- is_active: INTEGER; not_null=True; primary_key=False; default=1
+- unit: TEXT; not_null=True; primary_key=False; default='each'
+- barcode_type: TEXT; not_null=True; primary_key=False; default='code128'
+- near_expiry_days: INTEGER; not_null=True; primary_key=False; default=30
+- block_expired_sale: INTEGER; not_null=True; primary_key=False; default=1
+
+[purchase_order_items]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- purchase_order_id: INTEGER; not_null=True; primary_key=False; default=None
+- product_id: INTEGER; not_null=True; primary_key=False; default=None
+- description: TEXT; not_null=True; primary_key=False; default=None
+- ordered_qty: REAL; not_null=True; primary_key=False; default=None
+- received_qty: REAL; not_null=True; primary_key=False; default=0
+- unit_cost: REAL; not_null=True; primary_key=False; default=None
+- tax_rate: REAL; not_null=True; primary_key=False; default=0
+- line_total: REAL; not_null=True; primary_key=False; default=None
+
+[purchase_orders]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- supplier_id: INTEGER; not_null=True; primary_key=False; default=None
+- po_no: TEXT; not_null=True; primary_key=False; default=None
+- status: TEXT; not_null=True; primary_key=False; default='draft'
+- subtotal: REAL; not_null=True; primary_key=False; default=0
+- tax: REAL; not_null=True; primary_key=False; default=0
+- total: REAL; not_null=True; primary_key=False; default=0
+- amount_paid: REAL; not_null=True; primary_key=False; default=0
+- received_value: REAL; not_null=True; primary_key=False; default=0
+- balance_due: REAL; not_null=True; primary_key=False; default=0
+- supplier_invoice_ref: TEXT; not_null=True; primary_key=False; default=''
+- notes: TEXT; not_null=True; primary_key=False; default=''
+- expected_at: TEXT; not_null=False; primary_key=False; default=None
+- created_by: INTEGER; not_null=False; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- updated_at: TEXT; not_null=True; primary_key=False; default=None
+- cancelled_at: TEXT; not_null=False; primary_key=False; default=None
+- cancelled_by: INTEGER; not_null=False; primary_key=False; default=None
+- cancellation_reason: TEXT; not_null=True; primary_key=False; default=''
+
+[recurring_expenses]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- title: TEXT; not_null=True; primary_key=False; default=None
+- category: TEXT; not_null=True; primary_key=False; default=None
+- amount: REAL; not_null=True; primary_key=False; default=None
+- payment_method: TEXT; not_null=True; primary_key=False; default='Cash'
+- frequency: TEXT; not_null=True; primary_key=False; default=None
+- interval_count: INTEGER; not_null=True; primary_key=False; default=1
+- start_date: TEXT; not_null=True; primary_key=False; default=None
+- end_date: TEXT; not_null=False; primary_key=False; default=None
+- next_due_at: TEXT; not_null=True; primary_key=False; default=None
+- reminder_days: INTEGER; not_null=True; primary_key=False; default=3
+- automatic_posting: INTEGER; not_null=True; primary_key=False; default=0
+- payee: TEXT; not_null=True; primary_key=False; default=''
+- note: TEXT; not_null=True; primary_key=False; default=''
+- is_active: INTEGER; not_null=True; primary_key=False; default=1
+- last_posted_at: TEXT; not_null=False; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- month_end: INTEGER; not_null=True; primary_key=False; default=0
+- last_run_key: TEXT; not_null=True; primary_key=False; default=''
+
+[refunds]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- return_id: INTEGER; not_null=True; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- cash_session_id: INTEGER; not_null=False; primary_key=False; default=None
+- amount: REAL; not_null=True; primary_key=False; default=None
+- method: TEXT; not_null=True; primary_key=False; default=None
+- reference: TEXT; not_null=True; primary_key=False; default=''
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- transaction_ref: TEXT; not_null=True; primary_key=False; default=''
+
+[reminders]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- reminder_type: TEXT; not_null=True; primary_key=False; default=None
+- title: TEXT; not_null=True; primary_key=False; default=None
+- message: TEXT; not_null=True; primary_key=False; default=None
+- due_at: TEXT; not_null=True; primary_key=False; default=None
+- reference_type: TEXT; not_null=True; primary_key=False; default=''
+- reference_id: INTEGER; not_null=False; primary_key=False; default=None
+- dismissed_at: TEXT; not_null=False; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+
+[remote_dashboard_access_logs]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=False; primary_key=False; default=None
+- remote_address: TEXT; not_null=True; primary_key=False; default=''
+- route: TEXT; not_null=True; primary_key=False; default=None
+- success: INTEGER; not_null=True; primary_key=False; default=None
+- status_code: INTEGER; not_null=True; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+
+[report_exports]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=False; primary_key=False; default=None
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- report_type: TEXT; not_null=True; primary_key=False; default=None
+- format: TEXT; not_null=True; primary_key=False; default=None
+- filter_json: TEXT; not_null=True; primary_key=False; default=''
+- file_path: TEXT; not_null=True; primary_key=False; default=None
+- checksum: TEXT; not_null=True; primary_key=False; default=''
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+
+[return_items]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- return_id: INTEGER; not_null=True; primary_key=False; default=None
+- sale_item_id: INTEGER; not_null=True; primary_key=False; default=None
+- product_id: INTEGER; not_null=False; primary_key=False; default=None
+- quantity: REAL; not_null=True; primary_key=False; default=None
+- unit_price: REAL; not_null=True; primary_key=False; default=None
+- total: REAL; not_null=True; primary_key=False; default=None
+- item_condition: TEXT; not_null=True; primary_key=False; default='saleable'
+
+[returns]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- sale_id: INTEGER; not_null=True; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- return_no: TEXT; not_null=True; primary_key=False; default=None
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- reason: TEXT; not_null=True; primary_key=False; default=None
+- refund_method: TEXT; not_null=True; primary_key=False; default=None
+- total: REAL; not_null=True; primary_key=False; default=None
+- restock: INTEGER; not_null=True; primary_key=False; default=1
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- status: TEXT; not_null=True; primary_key=False; default='completed'
+- approved_by: INTEGER; not_null=False; primary_key=False; default=None
+- approved_at: TEXT; not_null=False; primary_key=False; default=None
+
+[role_permissions]
+- role_key: TEXT; not_null=True; primary_key=True; default=None
+- permission_key: TEXT; not_null=True; primary_key=True; default=None
+
+[roles]
+- role_key: TEXT; not_null=False; primary_key=True; default=None
+- label: TEXT; not_null=True; primary_key=False; default=None
+- is_system: INTEGER; not_null=True; primary_key=False; default=1
+
+[sale_items]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- sale_id: INTEGER; not_null=True; primary_key=False; default=None
+- product_id: INTEGER; not_null=False; primary_key=False; default=None
+- product_name: TEXT; not_null=True; primary_key=False; default=None
+- quantity: REAL; not_null=True; primary_key=False; default=None
+- unit_price: REAL; not_null=True; primary_key=False; default=None
+- cost_price: REAL; not_null=True; primary_key=False; default=None
+- total: REAL; not_null=True; primary_key=False; default=None
+
+[sales]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- invoice_no: TEXT; not_null=True; primary_key=False; default=None
+- subtotal: REAL; not_null=True; primary_key=False; default=None
+- discount: REAL; not_null=True; primary_key=False; default=0
+- total: REAL; not_null=True; primary_key=False; default=None
+- payment_method: TEXT; not_null=True; primary_key=False; default=None
+- customer_id: INTEGER; not_null=False; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=1
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- cash_session_id: INTEGER; not_null=False; primary_key=False; default=None
+- status: TEXT; not_null=True; primary_key=False; default='completed'
+- amount_paid: REAL; not_null=True; primary_key=False; default=0
+- balance_due: REAL; not_null=True; primary_key=False; default=0
+- source_document_id: INTEGER; not_null=False; primary_key=False; default=None
+- returned_total: REAL; not_null=True; primary_key=False; default=0
+
+[settings]
+- setting_key: TEXT; not_null=False; primary_key=True; default=None
+- setting_value: TEXT; not_null=True; primary_key=False; default=None
+
+[staff_sessions]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- user_id: INTEGER; not_null=True; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- started_at: TEXT; not_null=True; primary_key=False; default=None
+- ended_at: TEXT; not_null=False; primary_key=False; default=None
+- device_id: TEXT; not_null=True; primary_key=False; default=''
+
+[stock_adjustments]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- product_id: INTEGER; not_null=True; primary_key=False; default=None
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- quantity_change: REAL; not_null=True; primary_key=False; default=None
+- reason: TEXT; not_null=True; primary_key=False; default=None
+- note: TEXT; not_null=True; primary_key=False; default=''
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+
+[stock_count_items]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- stock_count_id: INTEGER; not_null=True; primary_key=False; default=None
+- product_id: INTEGER; not_null=True; primary_key=False; default=None
+- expected_qty: REAL; not_null=True; primary_key=False; default=None
+- counted_qty: REAL; not_null=False; primary_key=False; default=None
+- posted: INTEGER; not_null=True; primary_key=False; default=0
+
+[stock_counts]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- count_no: TEXT; not_null=True; primary_key=False; default=None
+- status: TEXT; not_null=True; primary_key=False; default='draft'
+- started_by: INTEGER; not_null=False; primary_key=False; default=None
+- approved_by: INTEGER; not_null=False; primary_key=False; default=None
+- started_at: TEXT; not_null=True; primary_key=False; default=None
+- approved_at: TEXT; not_null=False; primary_key=False; default=None
+- notes: TEXT; not_null=True; primary_key=False; default=''
+
+[stock_transfer_items]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- transfer_id: INTEGER; not_null=True; primary_key=False; default=None
+- product_id: INTEGER; not_null=True; primary_key=False; default=None
+- quantity: REAL; not_null=True; primary_key=False; default=None
+- received_quantity: REAL; not_null=False; primary_key=False; default=None
+- dispatched_quantity: REAL; not_null=True; primary_key=False; default=0
+- damaged_quantity: REAL; not_null=True; primary_key=False; default=0
+- missing_quantity: REAL; not_null=True; primary_key=False; default=0
+- excess_quantity: REAL; not_null=True; primary_key=False; default=0
+- discrepancy_reason: TEXT; not_null=True; primary_key=False; default=''
+
+[stock_transfer_status_history]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- transfer_id: INTEGER; not_null=True; primary_key=False; default=None
+- old_status: TEXT; not_null=True; primary_key=False; default=''
+- new_status: TEXT; not_null=True; primary_key=False; default=None
+- changed_by: INTEGER; not_null=False; primary_key=False; default=None
+- reason: TEXT; not_null=True; primary_key=False; default=''
+- changed_at: TEXT; not_null=True; primary_key=False; default=None
+
+[stock_transfers]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- transfer_no: TEXT; not_null=True; primary_key=False; default=None
+- source_branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- destination_branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- status: TEXT; not_null=True; primary_key=False; default='draft'
+- created_by: INTEGER; not_null=False; primary_key=False; default=None
+- dispatched_by: INTEGER; not_null=False; primary_key=False; default=None
+- received_by: INTEGER; not_null=False; primary_key=False; default=None
+- dispatched_at: TEXT; not_null=False; primary_key=False; default=None
+- received_at: TEXT; not_null=False; primary_key=False; default=None
+- notes: TEXT; not_null=True; primary_key=False; default=''
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- approved_by: INTEGER; not_null=False; primary_key=False; default=None
+- approved_at: TEXT; not_null=False; primary_key=False; default=None
+- rejected_by: INTEGER; not_null=False; primary_key=False; default=None
+- rejected_at: TEXT; not_null=False; primary_key=False; default=None
+- rejection_reason: TEXT; not_null=True; primary_key=False; default=''
+- cancelled_by: INTEGER; not_null=False; primary_key=False; default=None
+- cancelled_at: TEXT; not_null=False; primary_key=False; default=None
+- cancellation_reason: TEXT; not_null=True; primary_key=False; default=''
+- completed_at: TEXT; not_null=False; primary_key=False; default=None
+- reversed_by: INTEGER; not_null=False; primary_key=False; default=None
+- reversed_at: TEXT; not_null=False; primary_key=False; default=None
+- reversal_reason: TEXT; not_null=True; primary_key=False; default=''
+
+[supplier_payments]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- supplier_id: INTEGER; not_null=True; primary_key=False; default=None
+- purchase_order_id: INTEGER; not_null=False; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=None
+- user_id: INTEGER; not_null=False; primary_key=False; default=None
+- cash_session_id: INTEGER; not_null=False; primary_key=False; default=None
+- amount: REAL; not_null=True; primary_key=False; default=None
+- payment_method: TEXT; not_null=True; primary_key=False; default=None
+- reference: TEXT; not_null=True; primary_key=False; default=''
+- is_deposit: INTEGER; not_null=True; primary_key=False; default=0
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- transaction_ref: TEXT; not_null=True; primary_key=False; default=''
+
+[suppliers]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- name: TEXT; not_null=True; primary_key=False; default=None
+- phone: TEXT; not_null=True; primary_key=False; default=''
+- email: TEXT; not_null=True; primary_key=False; default=''
+- balance: REAL; not_null=True; primary_key=False; default=0
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=1
+- tax_number: TEXT; not_null=True; primary_key=False; default=''
+- is_active: INTEGER; not_null=True; primary_key=False; default=1
+
+[update_records]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- current_version: TEXT; not_null=True; primary_key=False; default=None
+- available_version: TEXT; not_null=True; primary_key=False; default=None
+- download_url: TEXT; not_null=True; primary_key=False; default=None
+- checksum: TEXT; not_null=True; primary_key=False; default=None
+- status: TEXT; not_null=True; primary_key=False; default=None
+- checked_at: TEXT; not_null=True; primary_key=False; default=None
+- installed_at: TEXT; not_null=False; primary_key=False; default=None
+- error_message: TEXT; not_null=True; primary_key=False; default=''
+- available_build: INTEGER; not_null=True; primary_key=False; default=0
+- minimum_version: TEXT; not_null=True; primary_key=False; default=''
+- mandatory: INTEGER; not_null=True; primary_key=False; default=0
+- file_size: INTEGER; not_null=True; primary_key=False; default=0
+- file_signature: TEXT; not_null=True; primary_key=False; default=''
+- manifest_signature: TEXT; not_null=True; primary_key=False; default=''
+
+[user_branch_access]
+- user_id: INTEGER; not_null=True; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=True; default=None
+- is_primary: INTEGER; not_null=True; primary_key=False; default=0
+- granted_by: INTEGER; not_null=False; primary_key=False; default=None
+- granted_at: TEXT; not_null=True; primary_key=False; default=None
+
+[user_permissions]
+- user_id: INTEGER; not_null=True; primary_key=True; default=None
+- permission_key: TEXT; not_null=True; primary_key=True; default=None
+- allowed: INTEGER; not_null=True; primary_key=False; default=1
+
+[users]
+- id: INTEGER; not_null=False; primary_key=True; default=None
+- branch_id: INTEGER; not_null=True; primary_key=False; default=1
+- name: TEXT; not_null=True; primary_key=False; default=None
+- username: TEXT; not_null=True; primary_key=False; default=None
+- pin_hash: TEXT; not_null=True; primary_key=False; default=None
+- role: TEXT; not_null=True; primary_key=False; default=None
+- is_active: INTEGER; not_null=True; primary_key=False; default=1
+- failed_attempts: INTEGER; not_null=True; primary_key=False; default=0
+- locked_until: TEXT; not_null=False; primary_key=False; default=None
+- last_login_at: TEXT; not_null=False; primary_key=False; default=None
+- created_at: TEXT; not_null=True; primary_key=False; default=None
+- force_pin_change: INTEGER; not_null=True; primary_key=False; default=0
+- updated_at: TEXT; not_null=False; primary_key=False; default=None

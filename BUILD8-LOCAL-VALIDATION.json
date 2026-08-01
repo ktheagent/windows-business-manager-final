@@ -1,0 +1,146 @@
+{
+  "generated_at_utc": "2026-08-01T00:28:46.504289+00:00",
+  "source_root": "/mnt/data/build8_full_source/Airmonlink-Business-Manager-1.3.0-Build8-Full-Source",
+  "pubspec_sha256": "36f839eea324dd9f4f1650f401766ae68735717389ce16a2d16e8d5bd82c3fee",
+  "summary": {
+    "complete": 20,
+    "incomplete": 0,
+    "blocked": 2,
+    "missing": 0,
+    "checks": 22
+  },
+  "results": [
+    {
+      "requirement": "DATABASE-SCHEMA",
+      "status": "COMPLETE",
+      "evidence": "50 application tables; errors=[]",
+      "defect": ""
+    },
+    {
+      "requirement": "MIGRATION-LEGACY-DATA",
+      "status": "COMPLETE",
+      "evidence": "{\"customers\": 1, \"expenses\": 1, \"products\": 1, \"sale_items\": 1, \"sales\": 1, \"suppliers\": 1}",
+      "defect": ""
+    },
+    {
+      "requirement": "SQLITE-INTEGRITY",
+      "status": "COMPLETE",
+      "evidence": "integrity_check=ok; foreign_key_violations=0",
+      "defect": ""
+    },
+    {
+      "requirement": "AUDIT-IMMUTABILITY",
+      "status": "COMPLETE",
+      "evidence": "update_blocked=True; delete_blocked=True",
+      "defect": ""
+    },
+    {
+      "requirement": "TRANSACTION-IDEMPOTENCY",
+      "status": "COMPLETE",
+      "evidence": "duplicate_document_payment_blocked=True",
+      "defect": ""
+    },
+    {
+      "requirement": "STAFF-ROLES",
+      "status": "COMPLETE",
+      "evidence": "Five roles plus create/edit/disable/PIN/lock/branch service paths",
+      "defect": ""
+    },
+    {
+      "requirement": "PERMISSIONS",
+      "status": "COMPLETE",
+      "evidence": "Navigation and service permission enforcement",
+      "defect": ""
+    },
+    {
+      "requirement": "DOCUMENT-EDITOR",
+      "status": "COMPLETE",
+      "evidence": "Multi-line editor and document lifecycle services",
+      "defect": ""
+    },
+    {
+      "requirement": "STOCK-TRANSFER",
+      "status": "COMPLETE",
+      "evidence": "Approval, dispatch, discrepancy receipt and reversal",
+      "defect": ""
+    },
+    {
+      "requirement": "REPORTS",
+      "status": "COMPLETE",
+      "evidence": "Actual-data report catalog, filters and exports",
+      "defect": ""
+    },
+    {
+      "requirement": "BACKUPS",
+      "status": "COMPLETE",
+      "evidence": "Encrypted backup, verification, scheduling, rollback and WebDAV",
+      "defect": ""
+    },
+    {
+      "requirement": "UPDATES",
+      "status": "COMPLETE",
+      "evidence": "HTTPS, SHA-256, Ed25519 manifest/file verification and launch",
+      "defect": ""
+    },
+    {
+      "requirement": "WHATSAPP",
+      "status": "COMPLETE",
+      "evidence": "WhatsApp Web and Business API delivery/status paths",
+      "defect": ""
+    },
+    {
+      "requirement": "SMTP",
+      "status": "COMPLETE",
+      "evidence": "TLS SMTP, attachment, retries and test action",
+      "defect": ""
+    },
+    {
+      "requirement": "REMOTE-DASHBOARD",
+      "status": "COMPLETE",
+      "evidence": "Token-protected read-only service with access logging",
+      "defect": ""
+    },
+    {
+      "requirement": "IMPORTS",
+      "status": "COMPLETE",
+      "evidence": "CSV/XLSX import with transaction and row-error logging",
+      "defect": ""
+    },
+    {
+      "requirement": "FORCED-PIN-CHANGE",
+      "status": "COMPLETE",
+      "evidence": "Non-dismissible PIN-change workflow and service update",
+      "defect": ""
+    },
+    {
+      "requirement": "LICENCE-REGRESSION-SOURCE",
+      "status": "COMPLETE",
+      "evidence": "never extends expiry, paid activation immediately replaces, remains revoked offline",
+      "defect": ""
+    },
+    {
+      "requirement": "BUILD8-REGRESSION-SOURCE",
+      "status": "COMPLETE",
+      "evidence": "8/8 required regression test sources",
+      "defect": ""
+    },
+    {
+      "requirement": "WINDOWS-WORKFLOW",
+      "status": "COMPLETE",
+      "evidence": "12/12 required workflow tokens",
+      "defect": ""
+    },
+    {
+      "requirement": "FLUTTER-RUNTIME-VALIDATION",
+      "status": "BLOCKED",
+      "evidence": "{\"dart\": \"\", \"flutter\": \"\", \"platform\": \"linux\"}",
+      "defect": ""
+    },
+    {
+      "requirement": "WINDOWS-RUNTIME-VALIDATION",
+      "status": "BLOCKED",
+      "evidence": "host_platform=linux; requires Windows 10/11 build host",
+      "defect": ""
+    }
+  ]
+}

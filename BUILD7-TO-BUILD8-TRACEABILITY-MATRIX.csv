@@ -1,0 +1,23 @@
+Requirement ID,Description,Status,Source file / class / DB / UI evidence,Test evidence,Workflow / limitation,Corrective commit
+B7-01,Five staff roles and account lifecycle,COMPLETE,commercial_models.dart; commercial_service.dart; commercial_suite_screen.dart,commercial_service_test.dart; build8_regression_test.dart,Flutter runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B7-02,Permission matrix and service/UI enforcement,COMPLETE,CommercialPermission; CommercialService._require; ShellScreen,cashier discount regression,Flutter runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B7-03,Immutable audit trail,COMPLETE,audit_logs; immutable triggers; logAudit,local SQLite trigger check; build8 regression source,Flutter runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B7-04,Returns and refunds,COMPLETE,CommercialService.createReturn; returns/refunds tables,commercial_service_test.dart,Flutter runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B7-05,Cash register sessions and variance,COMPLETE,cash_registers/cash_sessions/cash_movements; service/UI,source regression inventory,Flutter runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B7-06,"Profit, debt, stock and expiry reports",COMPLETE,advanced_report_service.dart,branch-isolation regression source,Flutter runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B7-07,Stock and expiry alerts,COMPLETE,product_batches; lowStockSuggestions; businessHealth,source validation,Flutter runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-01,Multi-line commercial documents,COMPLETE,document_editor_dialog.dart; commercial_document_service.dart,build8 calculation/lifecycle tests,Flutter/widget/printer runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-02,Purchasing and goods receipts,COMPLETE,purchase_orders/goods_receipts/goods_receipt_items; service/UI,purchase idempotency tests,Flutter runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-03,Customer and supplier debt,COMPLETE,customer_transactions; supplier_payments; reports,commercial service tests,Flutter runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-04,"Stock counts, adjustments and barcodes",COMPLETE,commercial_service.dart; commercial_document_service.dart,source validation,Hardware tests BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-05,Multi-branch and complete stock transfers,COMPLETE,branches/branch_inventory/transfers; dialogs/service,partial discrepancy/reversal test source,Flutter runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-06,Encrypted scheduled backup and restore,COMPLETE,backup_service.dart; backup_schedules; secure_config,source validation,Runtime/WebDAV BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-07,Remote owner dashboard security,COMPLETE,remote_dashboard_service.dart,source validation,Live network test BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-08,SMTP and WhatsApp Web/API,COMPLETE,notification_service.dart; secure_config,source validation,Provider tests BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-09,Recurring expenses,COMPLETE,commercial_service.dart recurring methods,duplicate-run regression source,Flutter runtime BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-10,CSV/XLSX imports,COMPLETE,import_service.dart; import_jobs,source validation,Flutter/file workflow BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-11,Cryptographically secure updates,COMPLETE,update_service.dart; release_signing_key.dart; signing tool,source validation,Runtime signed-installer test BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+B8-12,Business health and actual-data reports,COMPLETE,businessHealth; advanced_report_service.dart,source validation,Runtime chart/data test BLOCKED,d204898e309a1a361772c05cbba5d50dc6c8831a
+REL-01,Flutter dependency resolution and lock regeneration,BLOCKED,pubspec.yaml coordinated stable constraints,NOT RUN,Flutter unavailable; pubspec.lock absent,MISSING
+REL-02,Format/analyze/test/Windows build,BLOCKED,windows-build.yml sequence,NOT RUN,Flutter/Windows unavailable,MISSING
+REL-03,Installer/portable/full-source/checksums,BLOCKED,workflow and packaging scripts,Source ZIP can be created locally; Windows files NOT RUN,Windows unavailable,MISSING

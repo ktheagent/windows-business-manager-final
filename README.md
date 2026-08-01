@@ -1,0 +1,112 @@
+# Airmonlink Business Manager
+
+Airmonlink Business Manager is an offline-first Windows point-of-sale and commercial business-management application built with Flutter and SQLite.
+
+## Release identity
+
+- Product: `Airmonlink Business Manager`
+- Version: `1.3.0+8`
+- Target platform: Windows 10 and Windows 11, x64
+- CI toolchain: Flutter `3.44.5`
+- Release branch: `feature/build8-commercial-suite-complete`
+- Executable: `airmonlink_business_manager.exe`
+
+Expected Windows artifacts:
+
+- `Airmonlink-Business-Manager-1.3.0-Build8-Setup.exe`
+- `Airmonlink-Business-Manager-1.3.0-Build8-Portable.zip`
+- `Airmonlink-Business-Manager-1.3.0-Build8-Full-Source.zip`
+- `Airmonlink-Business-Manager-1.3.0-Build8-SHA256SUMS.txt`
+
+## Existing functions preserved
+
+- Point of sale, product and inventory management
+- Customers, suppliers, expenses and reports
+- Receipt printing and saved-sale receipt reprinting
+- Barcode-field search and USB keyboard/HID scanner input
+- Build 6 one-time trial and paid-licence state corrections
+- Local SQLite data and Windows branding
+
+## Build 7 professional controls
+
+- Owner, manager, cashier, accountant and stock-officer accounts
+- Salted PBKDF2 staff PINs, lockout tracking and session records
+- Service-level and screen-level permissions
+- Immutable operational audit log
+- Full and partial returns with refund and stock handling
+- Opening and closing cash shifts with movement and variance records
+- Product/branch profit reporting and customer/supplier debt reporting
+- Reorder, low-stock, product-batch and expiry data
+
+## Build 8 commercial and premium source
+
+- Quotations, estimates, pro-forma invoices, invoices, delivery notes and credit notes
+- Branded PDF documents and customer statements
+- Purchase orders, goods receipt, supplier deposits and part payments
+- Customer credit limits, part payments and account ledgers
+- Stock adjustments, stock counts, barcode-label PDFs and branch transfers
+- Separate branch inventory and consolidated owner health data
+- AES-GCM encrypted backups, restore rollback and optional WebDAV upload
+- CSV/XLSX imports with validation and transaction rollback
+- Read-only token-protected local owner dashboard
+- SMTP document delivery and WhatsApp Web document links
+- Recurring expenses and reminders
+- HTTPS update manifest and SHA-256-verified installer download
+- Business-health metrics and data-derived recommendations
+
+## Important validation status
+
+The source has passed local structural checks, relative-import checks, source-reference checks, immutable-audit checks, transaction-reference checks and a simulated Build 5/6-to-Build 8 SQLite migration. The migration preserved representative legacy records, created 50 application tables, returned `PRAGMA integrity_check = ok`, and produced no foreign-key violations.
+
+This environment does not contain Flutter, Dart, Visual Studio, Inno Setup or a Windows runner. Therefore these release gates remain unverified:
+
+```text
+flutter pub get
+dart format --output=none --set-exit-if-changed .
+flutter analyze
+flutter test
+flutter build windows --release
+Inno Setup compilation
+Installed/portable Windows launch
+Live SMTP, WebDAV, WhatsApp, updater, printer and scanner tests
+```
+
+`pubspec.lock` is intentionally absent because the inherited lock represented the failed dependency graph. The Windows workflow regenerates it with `flutter pub get`, verifies the resolved dependency tree and includes the generated lock in the full-source artifact. Commit the generated lock after the first successful Flutter-capable validation run.
+
+The source checkpoint is suitable for GitHub CI review. It is **not approved as a distributable Windows release** until every workflow step passes.
+
+## Build on Windows
+
+Install Flutter 3.44.5 and Visual Studio with **Desktop development with C++**, then run:
+
+```powershell
+flutter pub get
+./tool/bootstrap_windows.ps1
+dart format --output=none --set-exit-if-changed .
+flutter analyze
+flutter test
+flutter build windows --release
+./tool/package_windows.ps1
+```
+
+Build the installer with Inno Setup 6:
+
+```powershell
+& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\airmonlink_business_manager.iss
+```
+
+## Local data
+
+The SQLite database remains in the Windows application-support directory, outside the installation folder. Backups and exports use:
+
+```text
+Documents/Airmonlink Business Manager/
+├── Backups/
+└── Exports/
+```
+
+The installer does not include a deletion routine for customer business data.
+
+## Licensing and trademarks
+
+The community core is under GPL-3.0. The Airmonlink name, logo and product identity remain protected. See `LICENSE`, `TRADEMARKS.md` and `COMMERCIAL_LICENSING.md`.
