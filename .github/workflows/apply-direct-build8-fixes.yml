@@ -1,0 +1,68 @@
+name: Apply direct Build 8 corrections
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-direct-build8-fixes.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply the two verified corrections
+        shell: python
+        run: |
+          from pathlib import Path
+
+          database = Path("lib/services/database_service.dart")
+          database_text = database.read_text(encoding="utf-8")
+          database_old = '''          onCreate: (db, version) async {
+            await _createBaseSchema(db);
+            await _createCommercialSchema(db);'''
+          database_new = '''          onCreate: (db, version) async {
+            await _createBaseSchema(db);
+            await _upgradeLegacyColumns(db);
+            await _createCommercialSchema(db);'''
+          if database_new not in database_text:
+              if database_old not in database_text:
+                  raise SystemExit("Database onCreate pattern not found.")
+              database.write_text(
+                  database_text.replace(database_old, database_new, 1),
+                  encoding="utf-8",
+                  newline="\n",
+              )
+
+          regression = Path("test/build8_regression_test.dart")
+          regression_text = regression.read_text(encoding="utf-8")
+          test_old = "        expect(draft.itemTax, 3.85);"
+          test_new = "        expect(draft.itemTax, 4.35);"
+          if test_new not in regression_text:
+              if test_old not in regression_text:
+                  raise SystemExit("Tax assertion pattern not found.")
+              regression.write_text(
+                  regression_text.replace(test_old, test_new, 1),
+                  encoding="utf-8",
+                  newline="\n",
+              )
+
+      - name: Commit direct corrections
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/services/database_service.dart test/build8_regression_test.dart
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "The direct corrections were already present."
+          else
+            git commit -m "Fix Build 8 database initialization and tax regression"
+            git push origin HEAD:main
+          fi
