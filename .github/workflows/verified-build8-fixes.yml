@@ -1,0 +1,61 @@
+name: Apply verified Build 8 fixes
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tool/apply_verified_build8_fixes.py'
+      - '.github/workflows/verified-build8-fixes.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verified-build8-fixes
+  cancel-in-progress: true
+
+jobs:
+  validate-and-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.5'
+          channel: stable
+          cache: true
+
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Apply only the two verified corrections
+        run: python3 tool/apply_verified_build8_fixes.py
+
+      - name: Format touched Dart files
+        run: dart format lib/services/database_service.dart test/build8_regression_test.dart
+
+      - name: Run targeted regression test
+        run: flutter test test/build8_regression_test.dart --reporter expanded
+
+      - name: Run full test suite
+        run: flutter test --reporter expanded
+
+      - name: Run analyzer
+        run: flutter analyze --no-fatal-infos
+
+      - name: Commit validated corrections
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/services/database_service.dart test/build8_regression_test.dart
+          if git diff --cached --quiet; then
+            echo "Verified corrections were already present."
+          else
+            git commit -m "Fix Build 8 database initialization and tax regression"
+            git push origin HEAD:main
+          fi
