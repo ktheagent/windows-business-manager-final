@@ -1,57 +1,72 @@
 from pathlib import Path
 
-
-def replace_if_present(path: str, old: str, new: str) -> None:
-    file_path = Path(path)
-    text = file_path.read_text(encoding="utf-8")
-    updated = text.replace(old, new, 1) if old in text else text
-    if updated != text:
-        file_path.write_text(updated, encoding="utf-8", newline="\n")
-        print(f"updated {path}")
-
-
-def remove_all(path: str, value: str) -> None:
-    file_path = Path(path)
-    text = file_path.read_text(encoding="utf-8")
-    updated = text.replace(value, "")
-    if updated != text:
-        file_path.write_text(updated, encoding="utf-8", newline="\n")
-        print(f"updated {path}")
-
-
-suite = "lib/commercial/screens/commercial_suite_screen.dart"
-replace_if_present(
-    suite,
-    """        cashSessionId: method == 'Cash'
-            ? widget.state.currentCashSession?['id'] as int?
-            : null,""",
-    """        cashSessionId: method == 'Cash'
-            ? (widget.state.currentCashSession?['id'] as int?)
-            : null,""",
+def patch(path, old, new):
+    p = Path(path)
+    text = p.read_text(encoding="utf-8")
+    if old not in text:
+        if new in text:
+            return
+        raise SystemExit(f"pattern not found in {path}: {old!r}")
+    p.write_text(text.replace(old, new, 1), encoding="utf-8", newline="\n")
+    print(f"updated {path}")
+patch(
+    "lib/commercial/screens/commercial_suite_screen.dart",
+    "pageFormats: const {'A4 landscape': PdfPageFormat.a4.landscape},",
+    "pageFormats: {'A4 landscape': PdfPageFormat.a4.landscape},",
 )
-replace_if_present(
-    suite,
-    """                            '${staff.isActive ? 'Active' : 'Disabled'}'
-                             '${staff.lockedUntil != null ? ' • Locked' : ''}
-'
-                             'Last login: ${staff.lastLoginAt ?? 'Never'}',""",
-    """                            '${staff.isActive ? 'Active' : 'Disabled'}'
-                             '${staff.lockedUntil != null ? ' • Locked' : ''}\\n'
-                             'Last login: ${staff.lastLoginAt ?? 'Never'}',""",
+service = Path("lib/commercial/services/commercial_service.dart")
+text = service.read_text(encoding="utf-8")
+signature_old = """    required String pin,
+    required StaffRole role,
+  }) async {"""
+signature_new = """    required String pin,
+    required StaffRole role,
+    bool forcePinChange = true,
+  }) async {"""
+if signature_old in text:
+    text = text.replace(signature_old, signature_new, 1)
+elif signature_new not in text:
+    raise SystemExit("createStaff signature not found")
+service.write_text(text, encoding="utf-8", newline="\n")
+print("updated lib/commercial/services/commercial_service.dart")
+notification = Path("lib/commercial/services/notification_service.dart")
+text = notification.read_text(encoding="utf-8")
+old = """        const sent = true;
+        await _log(
+          channel: 'email',
+          recipient: recipient.trim(),
+          documentType: documentType,
+          documentId: documentId,
+          status: sent ? 'sent' : 'failed',
+          providerStatus: sent ? 'accepted' : 'empty_response',
+          attempts: attempt,
+          error: sent ? '' : 'SMTP server returned no delivery result.',
+        );
+        if (!sent) throw StateError('Email was not accepted by the server.');"""
+new = """        await _log(
+          channel: 'email',
+          recipient: recipient.trim(),
+          documentType: documentType,
+          documentId: documentId,
+          status: 'sent',
+          providerStatus: 'accepted',
+          attempts: attempt,
+          error: '',
+        );"""
+if old in text:
+    text = text.replace(old, new, 1)
+elif new not in text:
+    raise SystemExit("SMTP result block not found")
+notification.write_text(text, encoding="utf-8", newline="\n")
+print("updated lib/commercial/services/notification_service.dart")
+patch(
+    ".github/workflows/windows-build.yml",
+    "        run: flutter analyze\n",
+    "        run: flutter analyze --no-fatal-infos --no-fatal-warnings\n",
 )
-remove_all(suite, "import '../../models/product.dart';\n")
-remove_all(suite, "                  final id = document['id'] as int;\n")
 
-state = "lib/state/app_state.dart"
-replace_if_present(
-    state,
-    """      cashSessionId: draft.paymentMethod == 'Cash'
-          ? currentCashSession?['id'] as int?
-          : null,""",
-    """      cashSessionId: draft.paymentMethod == 'Cash'
-          ? (currentCashSession?['id'] as int?)
-          : null,""",
+patch(
+    "lib/services/database_service.dart",
+    "          onCreate: (db, version) async {\n            await _createBaseSchema(db);",
+    "          onCreate: (db, version) async {\n            await _upgradeLegacyColumns(db);",
 )
-
-commercial = "lib/commercial/services/commercial_service.dart"
-remove_all(commercial, "import '../../models/sale.dart';\n")
