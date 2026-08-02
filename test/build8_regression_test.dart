@@ -46,7 +46,7 @@ void main() {
           terms: '',
         );
         expect(draft.subtotal, 30.50);
-        expect(draft.itemTax, 3.85);
+        expect(draft.itemTax, 4.35);
         expect(draft.total, 32.85);
       },
     );

@@ -65,6 +65,7 @@ class DatabaseService {
           },
           onCreate: (db, version) async {
             await _createBaseSchema(db);
+            await _upgradeLegacyColumns(db);
             await _createCommercialSchema(db);
             await _ensureCommercialColumns(db);
             await _seed(db);
