@@ -19,8 +19,9 @@ jobs:
           fetch-depth: 0
 
       - name: Apply the two verified corrections
-        shell: python
+        shell: bash
         run: |
+          python3 <<'PY'
           from pathlib import Path
 
           database = Path("lib/services/database_service.dart")
@@ -53,6 +54,7 @@ jobs:
                   encoding="utf-8",
                   newline="\n",
               )
+          PY
 
       - name: Commit direct corrections
         run: |
