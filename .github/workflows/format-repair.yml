@@ -1,63 +1,14 @@
-name: Apply Build 8 analyzer repairs
+name: Disabled Build 8 repair workflow
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - tool/apply_build8_syntax_repair.py
-      - .github/workflows/format-repair.yml
-      - pubspec.yaml
 
 permissions:
-  contents: write
-
-concurrency:
-  group: build8-analyzer-repair
-  cancel-in-progress: true
+  contents: read
 
 jobs:
-  repair:
+  disabled:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.44.5'
-          channel: stable
-          cache: true
-
-      - name: Resolve locked dependencies
-        run: flutter pub get --enforce-lockfile
-
-      - name: Apply deterministic compatibility repairs
-        run: python3 tool/apply_build8_syntax_repair.py
-
-      - name: Apply supported analyzer fixes
-        run: dart fix --apply
-
-      - name: Format all Dart sources
-        run: dart format .
-
-      - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
-
-      - name: Verify no analyzer errors or warnings
-        run: flutter analyze --no-fatal-infos
-
-      - name: Commit repaired sources
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lib test pubspec.yaml pubspec.lock
-          if git diff --cached --quiet; then
-            echo "No source changes were required."
-          else
-            git commit -m "Apply Build 8 analyzer fixes"
-            git push origin HEAD:main
-          fi
+      - name: Repair automation disabled
+        run: echo "Automatic source repair is disabled. Source fixes must be committed directly."
