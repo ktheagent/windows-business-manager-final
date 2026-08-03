@@ -5,7 +5,6 @@ on:
   push:
     branches: [main]
     paths:
-      - 'tool/apply_verified_build8_fixes.py'
       - '.github/workflows/verified-build8-fixes.yml'
 
 permissions:
@@ -33,17 +32,100 @@ jobs:
       - name: Resolve locked dependencies
         run: flutter pub get --enforce-lockfile
 
-      - name: Apply only the two verified corrections
-        run: python3 tool/apply_verified_build8_fixes.py
+      - name: Apply the two evidence-based corrections
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
 
-      - name: Format touched Dart files
-        run: dart format lib/services/database_service.dart test/build8_regression_test.dart
+          def replace_once(path: str, old: str, new: str) -> None:
+              file_path = Path(path)
+              text = file_path.read_text(encoding="utf-8")
+              if new in text:
+                  print(f"already applied: {path}")
+                  return
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(
+                      f"expected exactly one verified pattern in {path}; found {count}"
+                  )
+              file_path.write_text(
+                  text.replace(old, new, 1),
+                  encoding="utf-8",
+                  newline="\n",
+              )
+              print(f"updated: {path}")
 
-      - name: Run targeted regression test
-        run: flutter test test/build8_regression_test.dart --reporter expanded
+          replace_once(
+              "test/build5_features_test.dart",
+              """      await state.refreshAll();
+              });
 
-      - name: Run full test suite
-        run: flutter test --reporter expanded
+              test('reprinting does not alter stock or transaction data', () async {""",
+              """      await state.refreshAll();
+              });
+
+              tearDown(() => database.close());
+
+              test('reprinting does not alter stock or transaction data', () async {""",
+          )
+
+          replace_once(
+              "lib/commercial/services/commercial_service.dart",
+              """  static Future<void> _writeAudit(
+              """,
+              """  static Object? _jsonSafe(Object? value) {
+                if (value is Map) {
+                  return <String, Object?>{
+                    for (final entry in value.entries)
+                      entry.key.toString(): _jsonSafe(entry.value),
+                  };
+                }
+                if (value is Iterable) {
+                  return value.map(_jsonSafe).toList(growable: false);
+                }
+                if (value is DateTime) return value.toIso8601String();
+                return value;
+              }
+
+              static String _encodeAuditValues(Map<String, Object?> values) =>
+                  jsonEncode(_jsonSafe(values));
+
+              static Future<void> _writeAudit(
+              """,
+          )
+
+          replace_once(
+              "lib/commercial/services/commercial_service.dart",
+              """    'old_values': oldValues == null ? null : jsonEncode(oldValues),
+              """,
+              """    'old_values': oldValues == null ? null : _encodeAuditValues(oldValues),
+              """,
+          )
+
+          replace_once(
+              "lib/commercial/services/commercial_service.dart",
+              """    'new_values': newValues == null ? null : jsonEncode(newValues),
+              """,
+              """    'new_values': newValues == null ? null : _encodeAuditValues(newValues),
+              """,
+          )
+          PY
+
+      - name: Format corrected files
+        run: |
+          dart format \
+            lib/commercial/services/commercial_service.dart \
+            test/build5_features_test.dart
+
+      - name: Run affected tests
+        run: |
+          flutter test test/build5_features_test.dart --reporter expanded
+          flutter test test/build8_regression_test.dart --reporter expanded
+          flutter test test/commercial_service_test.dart --reporter expanded
+
+      - name: Run complete test suite
+        run: fluter test --reporter expanded
 
       - name: Run analyzer
         run: flutter analyze --no-fatal-infos
@@ -52,10 +134,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lib/services/database_service.dart test/build8_regression_test.dart
+          git add \
+            lib/commercial/services/commercial_service.dart \
+            test/build5_features_test.dart
           if git diff --cached --quiet; then
-            echo "Verified corrections were already present."
+            echo "The verified corrections were already present."
           else
-            git commit -m "Fix Build 8 database initialization and tax regression"
+            git commit -m "Fix Build 8 test isolation and transfer audit encoding"
             git push origin HEAD:main
           fi
