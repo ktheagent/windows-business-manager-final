@@ -1,37 +1,14 @@
-name: Apply direct Build 8 corrections
+name: Disabled direct Build 8 corrections
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/apply-direct-build8-fixes.yml'
-      - 'tool/apply_verified_build8_fixes.py'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply:
+  disabled:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Apply verified source corrections
-        run: python3 tool/apply_verified_build8_fixes.py
-
-      - name: Commit corrected source
-        run: |
-          git diff --check
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lib/services/database_service.dart test/build8_regression_test.dart
-          if git diff --cached --quiet; then
-            echo "Verified corrections are already present."
-          else
-            git commit -m "Fix Build 8 database initialization and tax regression"
-            git push origin HEAD:main
-          fi
+      - name: Direct correction workflow retired
+        run: echo "The verified source corrections have been committed. This one-time workflow is disabled."
