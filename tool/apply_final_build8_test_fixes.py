@@ -9,34 +9,14 @@ def replace_once(path: str, old: str, new: str) -> None:
         return
     count = text.count(old)
     if count != 1:
-        raise SystemExit(
-            f"expected exactly one verified pattern in {path}; found {count}"
-        )
-    file_path.write_text(
-        text.replace(old, new, 1),
-        encoding="utf-8",
-        newline="\n",
-    )
+        raise SystemExit(f"expected one pattern in {path}; found {count}")
+    file_path.write_text(text.replace(old, new, 1), encoding="utf-8", newline="\n")
     print(f"updated: {path}")
 
+path = "lib/commercial/services/commercial_service.dart"
 
 replace_once(
-    "test/build5_features_test.dart",
-    """      await state.refreshAll();
-    });
-    test('reprinting does not alter stock or transaction data', () async {""",
-    """      await state.refreshAll();
-    });
-
-    tearDown(() async {
-      await database.close();
-    });
-
-    test('reprinting does not alter stock or transaction data', () async {""",
-)
-
-replace_once(
-    "lib/commercial/services/commercial_service.dart",
+    path,
     """  static Future<void> _writeAudit(
 """,
     """  static Object? _jsonSafeAuditValue(Object? value) {
@@ -64,9 +44,9 @@ replace_once(
 )
 
 replace_once(
-    "lib/commercial/services/commercial_service.dart",
+    path,
     """    'old_values': oldValues == null ? null : jsonEncode(oldValues),
-    'new_values': newValues == null ? null : jsonEncode(newValues),""",
+     'new_values': newValues == null ? null : jsonEncode(newValues),""",
     """    'old_values': oldValues == null ? null : _encodeAuditValues(oldValues),
-    'new_values': newValues == null ? null : _encodeAuditValues(newValues),""",
+     'new_values': newValues == null ? null : _encodeAuditValues(newValues),""",
 )
