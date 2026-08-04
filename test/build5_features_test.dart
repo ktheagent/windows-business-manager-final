@@ -36,6 +36,10 @@ void main() {
       await state.refreshAll();
     });
 
+    tearDown(() async {
+      await database.close();
+    });
+
     test('reprinting does not alter stock or transaction data', () async {
       final beforeStock = await database.getProducts();
       final beforeSales = await database.getSales();
