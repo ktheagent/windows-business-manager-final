@@ -1,17 +1,17 @@
-name: Apply verified Build 8 fixes
+name: Apply final verified Build 8 test fixes
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - '.github/workflows/verified-build8-fixes.yml'
+      - 'tool/apply_final_build8_test_fixes.py'
 
 permissions:
   contents: write
 
 concurrency:
-  group: verified-build8-fixes
+  group: final-build8-test-fixes
   cancel-in-progress: true
 
 jobs:
@@ -19,11 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out source
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: subosito/flutter-action@v2
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.5'
           channel: stable
@@ -32,85 +34,8 @@ jobs:
       - name: Resolve locked dependencies
         run: flutter pub get --enforce-lockfile
 
-      - name: Apply the two evidence-based corrections
-        shell: bash
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-
-          def replace_once(path: str, old: str, new: str) -> None:
-              file_path = Path(path)
-              text = file_path.read_text(encoding="utf-8")
-              if new in text:
-                  print(f"already applied: {path}")
-                  return
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(
-                      f"expected exactly one verified pattern in {path}; found {count}"
-                  )
-              file_path.write_text(
-                  text.replace(old, new, 1),
-                  encoding="utf-8",
-                  newline="\n",
-              )
-              print(f"updated: {path}")
-
-          replace_once(
-              "test/build5_features_test.dart",
-              """      await state.refreshAll();
-              });
-
-              test('reprinting does not alter stock or transaction data', () async {""",
-              """      await state.refreshAll();
-              });
-
-              tearDown(() => database.close());
-
-              test('reprinting does not alter stock or transaction data', () async {""",
-          )
-
-          replace_once(
-              "lib/commercial/services/commercial_service.dart",
-              """  static Future<void> _writeAudit(
-              """,
-              """  static Object? _jsonSafe(Object? value) {
-                if (value is Map) {
-                  return <String, Object?>{
-                    for (final entry in value.entries)
-                      entry.key.toString(): _jsonSafe(entry.value),
-                  };
-                }
-                if (value is Iterable) {
-                  return value.map(_jsonSafe).toList(growable: false);
-                }
-                if (value is DateTime) return value.toIso8601String();
-                return value;
-              }
-
-              static String _encodeAuditValues(Map<String, Object?> values) =>
-                  jsonEncode(_jsonSafe(values));
-
-              static Future<void> _writeAudit(
-              """,
-          )
-
-          replace_once(
-              "lib/commercial/services/commercial_service.dart",
-              """    'old_values': oldValues == null ? null : jsonEncode(oldValues),
-              """,
-              """    'old_values': oldValues == null ? null : _encodeAuditValues(oldValues),
-              """,
-          )
-
-          replace_once(
-              "lib/commercial/services/commercial_service.dart",
-              """    'new_values': newValues == null ? null : jsonEncode(newValues),
-              """,
-              """    'new_values': newValues == null ? null : _encodeAuditValues(newValues),
-              """,
-          )
-          PY
+      - name: Apply verified corrections
+        run: python3 tool/apply_final_build8_test_fixes.py
 
       - name: Format corrected files
         run: |
@@ -125,7 +50,10 @@ jobs:
           flutter test test/commercial_service_test.dart --reporter expanded
 
       - name: Run complete test suite
-        run: fluter test --reporter expanded
+        shell: pwsh
+        run: |
+          flutter test --reporter expanded 2>&1 | Tee-Object final-build8-test-report.txt
+          if ($LASTEXITCODE -ne 0) { throw "Full test suite failed: $LASTEXITCODE" }
 
       - name: Run analyzer
         run: flutter analyze --no-fatal-infos
@@ -138,8 +66,17 @@ jobs:
             lib/commercial/services/commercial_service.dart \
             test/build5_features_test.dart
           if git diff --cached --quiet; then
-            echo "The verified corrections were already present."
+            echo "Verified corrections were already present."
           else
-            git commit -m "Fix Build 8 test isolation and transfer audit encoding"
+            git commit -m "Fix Build 8 test isolation and audit encoding"
             git push origin HEAD:main
           fi
+
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Airmonlink-Build8-Final-Test-Fix-Diagnostics
+          path: final-build8-test-report.txt
+          if-no-files-found: warn
+          retention-days: 30
