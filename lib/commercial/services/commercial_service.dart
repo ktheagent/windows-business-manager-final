@@ -3229,7 +3229,9 @@ class CommercialService {
         entityId: '$id',
         newValues: {
           'destination_branch_id': destinationBranchId,
-          'items': quantitiesByProductId,
+          'items': quantitiesByProductId.map(
+            (key, value) => MapEntry(key.toString(), value),
+          ),
         },
       );
       return id;
@@ -3508,7 +3510,11 @@ class CommercialService {
         action: 'stock_transfer.dispatched',
         entityType: 'stock_transfer',
         entityId: '$transferId',
-        newValues: {'dispatched_quantities': dispatch},
+        newValues: {
+          'dispatched_quantities': dispatch.map(
+            (key, value) => MapEntry(key.toString(), value),
+          ),
+        },
       );
     });
   }
@@ -3659,7 +3665,11 @@ class CommercialService {
             : 'stock_transfer.partially_received',
         entityType: 'stock_transfer',
         entityId: '$transferId',
-        newValues: {'receipt': receivedSummary},
+        newValues: {
+          'receipt': receivedSummary.map(
+            (key, value) => MapEntry(key.toString(), value),
+          ),
+        },
       );
     });
   }
