@@ -1,6 +1,7 @@
 #define MyAppName "Airmonlink Business Manager"
 #define MyAppVersion "1.3.0"
 #define MyAppBuild "8"
+#define MyAppFileVersion "1.3.0.8"
 #define MyAppPublisher "Airmonlink"
 #define MyAppExeName "airmonlink_business_manager.exe"
 #define MyAppId "{{8B018058-1F0E-4DCF-8CB8-E3DC08714E4F}"
@@ -11,9 +12,10 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion} Build {#MyAppBuild}
 AppPublisher={#MyAppPublisher}
-VersionInfoVersion=1.3.0.8
+VersionInfoVersion={#MyAppFileVersion}
 VersionInfoProductName={#MyAppName}
-VersionInfoProductVersion={#MyAppVersion} Build {#MyAppBuild}
+VersionInfoProductVersion={#MyAppFileVersion}
+VersionInfoProductTextVersion={#MyAppVersion} Build {#MyAppBuild}
 DefaultDirName={localappdata}\Programs\Airmonlink Business Manager
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
