@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload validation report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Airmonlink-Build8-Final-Test-Fix-Diagnostics
           path: final-build8-test-report.txt
