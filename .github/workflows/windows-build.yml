@@ -175,7 +175,7 @@ jobs:
 
       - name: Upload diagnostic reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Airmonlink-Build8-Diagnostics
           path: |
@@ -190,7 +190,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Build 8 release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Airmonlink-Business-Manager-1.3.0-Build8-Release
           path: |
