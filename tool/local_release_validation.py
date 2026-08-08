@@ -57,7 +57,7 @@ record(
 )
 
 migration_tokens = [
-    "version: 8",
+    "schemaVersion = 8",
     "_upgradeLegacyColumns",
     "_ensureCommercialColumns",
     "PRAGMA",
@@ -79,7 +79,7 @@ premium_tokens = [
     "assignStaffBranches",
 ]
 record(
-    "PREMIUM-COMMERCIAL-SOURCE",
+    "PREMIUM-COMMEICIAL-SOURCE",
     all(token in commercial for token in premium_tokens),
     f"{sum(token in commercial for token in premium_tokens)}/{len(premium_tokens)} premium service tokens present",
 )
