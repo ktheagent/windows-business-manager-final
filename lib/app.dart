@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'core/app_constants.dart';
 import 'core/app_theme.dart';
+import 'core/premium_glass.dart';
 import 'licensing/license_controller.dart';
 import 'screens/shell_screen.dart';
 import 'state/app_state.dart';
@@ -42,6 +43,11 @@ class _AirmonlinkBusinessManagerAppState
         title: AppConstants.appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
+        builder: (context, child) {
+          return PremiumGlassBackdrop(
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
         home: ShellScreen(licenseController: licenseController),
       ),
     );
