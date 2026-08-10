@@ -1,4 +1,4 @@
-# Fresh validation trigger: 2026-08-10 19:27 UTC
+# Fresh validation trigger: 2026-08-10 19:32 UTC
 name: Apply verified commercial workflow fixes
 
 on:
@@ -28,17 +28,16 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Correct current source marker
+      - name: Normalize verified patch against current source
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           path = Path('tool/apply_verified_commercial_workflow_fixes.py')
           text = path.read_text(encoding='utf-8')
-          old = 'class _PurchasesPanelState'
-          new = 'class _PurchasingPanelState'
-          if old in text:
-              path.write_text(text.replace(old, new), encoding='utf-8')
+          text = text.replace('class _PurchasesPanelState', 'class _PurchasingPanelState')
+          text = text.replace(' && item.isActive', '')
+          path.write_text(text, encoding='utf-8')
           PY
 
       - name: Apply verified workflow fixes
@@ -58,7 +57,7 @@ jobs:
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
             echo "Analyzer failed; publishing diagnostic annotations."
-            grep -E '(^|[[:space:]])Error([[:space:]]| • |-)' analyze.log | head -40 | while IFS= read -r line; do
+            grep -E '(^|[[:space:]])error([[:space:]]| • |-) ' analyze.log | head -40 | while IFS= read -r line; do
               line=${line//'%'/'%25'}
               line=${line//$'\r'/'%0D'}
               line=${line//$'\n'/'%0A'}
