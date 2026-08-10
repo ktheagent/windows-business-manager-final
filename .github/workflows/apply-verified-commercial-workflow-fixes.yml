@@ -49,8 +49,22 @@ jobs:
       - name: Format changed Dart
         run: dart format lib/commercial/screens/commercial_suite_screen.dart
 
-      - name: Analyze
-        run: flutter analyze --no-fatal-infos
+      - name: Analyze with visible diagnostics
+        shell: bash
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos 2>&1 | tee analyze.log
+          status=${PIPESTATUS_0]}
+          if [ "$status" -ne 0 ]; then
+            echo "Analyzer failed; publishing diagnostic annotations."
+            grep -E '(^|[[:space:]])error([[:space:]]| • |-)' analyze.log | head -40 | while IFS= read -r line; do
+              line=${line//'%'/'%25'}
+              line=${line//$'\r'/'%0D'}
+              line=${line//$'\n'/'%0A'}
+              echo "::error title=Flutter Analyze::$line"
+            done
+          fi
+          exit "$status"
 
       - name: Test
         run: flutter test --reporter expanded
