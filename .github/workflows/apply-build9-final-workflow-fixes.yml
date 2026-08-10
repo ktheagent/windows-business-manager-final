@@ -27,7 +27,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Repair and syntax-check final patch scripts
+      - name: Normalize and syntax-check Build 9 patch scripts
         shell: bash
         run: |
           python3 - <<'PY'
@@ -36,27 +36,44 @@ jobs:
           path = Path('tool/apply_build9_final_workflow_fixes.py')
           text = path.read_text(encoding='utf-8')
 
-          bad_quote = '    final draft = SaleDraft(\n"",\n'
-          good_quote = '    final draft = SaleDraft(\n""",\n'
-          quote_count = text.count(bad_quote)
-          if quote_count != 1:
-              raise SystemExit(
-                  f'Expected exactly 1 malformed POS quote block, found {quote_count}'
-              )
-          text = text.replace(bad_quote, good_quote, 1)
+          replacements = [
+              (
+                  '    final draft = SaleDraft(\n"",\n',
+                  '    final draft = SaleDraft(\n"""\n',
+                  1,
+                  'malformed POS triple quote',
+              ),
+              (
+                  "    r 'bool(re.search",
+                  "    r'bool(re.search",
+                  2,
+                  'malformed local-validator raw strings',
+              ),
+              (
+                  'r\'re.search(r"(?m)^version:\\*\\1\\.3\\.0\\\\+8\\s*$", pubspec)\'',
+                  'r\'re.search(r"(?m)^version:\\s*1\\.3\\.0\\+8\\s*$", pubspec)\'',
+                  1,
+                  'Build 8 source-checkpoint regex anchor',
+              ),
+              (
+                  'r\'re.search(r"(?m)^version:\\*\\1\\.3\\.0\\\\+9\\s*$", pubspec)\'',
+                  'r\'re.search(r"(?m)^version:\\s*1\\.3\\.0\\+9\\s*$", pubspec)\'',
+                  1,
+                  'Build 9 source-checkpoint regex anchor',
+              ),
+          ]
 
-          bad_raw = "    r 'bool(re.search"
-          good_raw = "    r'bool(re.search"
-          raw_count = text.count(bad_raw)
-          if raw_count != 2:
-              raise SystemExit(
-                  f'Expected exactly 2 malformed raw-string tokens, found {raw_count}'
-              )
-          text = text.replace(bad_raw, good_raw, 2)
+          for old, new, expected, label in replacements:
+              found = text.count(old)
+              if found != expected:
+                  raise SystemExit(
+                      f'{label}: expected {expected} occurrence(s), found {found}'
+                  )
+              text = text.replace(old, new, expected)
 
           path.write_text(text, encoding='utf-8')
           compile(text, str(path), 'exec')
-          print('Final Build 9 patch script syntax OK after exact repairs.')
+          print('Final Build 9 patch script syntax and validator anchors OK.')
           PY
           python3 -m py_compile tool/apply_build9_final_workflow_fixes.py
           python3 -m py_compile tool/apply_build9_validation_hardening.py
