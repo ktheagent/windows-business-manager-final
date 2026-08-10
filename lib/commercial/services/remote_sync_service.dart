@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS remote_sync_commands(
     final raw = await _config.remoteSyncEndpoint();
     if (raw == null || raw.isEmpty) return null;
     final uri = Uri.tryParse(raw);
-    if (uri == null || !_allowed(uri) {
+    if (uri == null || !_allowed(uri)) {
       throw StateError('Remote sync endpoint is invalid or insecure.');
     }
     return uri;
