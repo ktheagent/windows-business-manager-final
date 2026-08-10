@@ -1,11 +1,21 @@
 from pathlib import Path
 
+
 def replace_once(path: str, old: str, new: str) -> None:
     p = Path(path)
     text = p.read_text(encoding="utf-8")
     if old not in text:
         raise SystemExit(f"pattern not found in {path}: {old[:120]!r}")
     p.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def replace_all_required(path: str, old: str, new: str) -> None:
+    p = Path(path)
+    text = p.read_text(encoding="utf-8")
+    if old not in text:
+        raise SystemExit(f"pattern not found in {path}: {old[:120]!r}")
+    p.write_text(text.replace(old, new), encoding="utf-8")
+
 
 editor = "lib/commercial/screens/document_editor_dialog.dart"
 
@@ -106,7 +116,7 @@ replace_once(
     """                    child: DropdownButtonFormField<int?>(
                       initialValue: _customerId,
                       style: const TextStyle(
-                        color: Color(0xFF0F2A5A),
+                        color: Color(0xFF0F2AAA),
                         fontWeight: FontWeight.w700,
                       ),
                       dropdownColor: Colors.white,""",
@@ -148,6 +158,7 @@ replace_once(
 )
 
 pos = "lib/screens/pos_screen.dart"
+
 replace_once(
     pos,
     """import '../core/formatters.dart';""",
@@ -232,21 +243,75 @@ replace_once(
     final discountController = TextEditingController(text: '0.00');""",
 )
 
+# Deliberately anchor only on the SaleDraft statement, not surrounding whitespace.
 replace_once(
     pos,
-    """    if (checkout == null || !context.mounted) {
-      return;
-    }
-    final draft = SaleDraft(""",
-    """    if (checkout == null || !context.mounted) {
-      return;
-    }
-    if (checkout.paymentMethod == 'Cash' &&
+    """    final draft = SaleDraft(""",
+    """    if (checkout.paymentMethod == 'Cash' &&
         state.currentCashSession == null) {
       final opened = await _openCashShift(context, state);
       if (!opened || !context.mounted) return;
     }
+
     final draft = SaleDraft(""",
 )
 
+replace_once(
+    pos,
+    """                  DropdownButtonFormField<String>(
+                    initialValue: paymentMethod,
+                    decoration: const InputDecoration(""",
+    """                  DropdownButtonFormField<String>(
+                    initialValue: paymentMethod,
+                    style: const TextStyle(
+                      color: Color(0xFF0F2A5A),
+                      fontWeight: FontWeight.w700,
+                    ),
+                    dropdownColor: Colors.white,
+                    decoration: const InputDecoration(""",
+)
+
+replace_once(
+    pos,
+    """                  DropdownButtonFormField<int?>(
+                    initialValue: customerId,
+                    decoration: InputDecoration(""",
+    """                  DropdownButtonFormField<int?>(
+                    initialValue: customerId,
+                    style: const TextStyle(
+                      color: Color(0xFF0F2A5A),
+                      fontWeight: FontWeight.w700,
+                    ),
+                    dropdownColor: Colors.white,
+                    decoration: InputDecoration(""",
+)
+
 replace_once("pubspec.yaml", "version: 1.3.0+8", "version: 1.3.0+9")
+
+workflow = ".github/workflows/windows-build.yml"
+replace_all_required(workflow, "Build8", "Build9")
+replace_all_required(workflow, "Build 8", "Build 9")
+replace_all_required(workflow, "1.3.0+8", "1.3.0+9")
+
+replace_once("tool/package_windows.ps1", "$build = '8'", "$build = '9'")
+replace_once("tool/package_source.ps1", "$build = '8'", "$build = '9'")
+replace_once(
+    "tool/build_installer.ps1",
+    "$productPrefix = 'Airmonlink-Business-Manager-1.3.0-Build8'",
+    "$productPrefix = 'Airmonlink-Business-Manager-1.3.0-Build9'",
+)
+
+installer = "installer/airmonlink_business_manager.iss"
+replace_once(installer, '#define MyAppBuild "8"', '#define MyAppBuild "9"')
+replace_once(
+    installer,
+    '#define MyAppFileVersion "1.3.0.8"',
+    '#define MyAppFileVersion "1.3.0.9"',
+)
+replace_once(
+    installer,
+    "OutputBaseFilename=Airmonlink-Business-Manager-1.3.0-Build8-Setup",
+    "OutputBaseFilename=Airmonlink-Business-Manager-1.3.0-Build9-Setup",
+)
+
+print("Build 9 commercial UX patch applied.")
