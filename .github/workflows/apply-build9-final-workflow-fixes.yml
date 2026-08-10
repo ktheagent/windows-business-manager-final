@@ -39,7 +39,7 @@ jobs:
           replacements = [
               (
                   '    final draft = SaleDraft(\n"",\n',
-                  '    final draft = SaleDraft(\n"""\n',
+                  '    final draft = SaleDraft(\n""",\n',
                   1,
                   'malformed POS triple quote',
               ),
