@@ -2,7 +2,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureConfigService {
   const SecureConfigService({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+      : _storage = storage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 
@@ -25,6 +25,22 @@ class SecureConfigService {
       write('remote_dashboard.token', token);
   Future<String?> remoteDashboardToken() => read('remote_dashboard.token');
 
+  Future<void> saveRemoteSyncEndpoint(String value) =>
+      write('remote_sync.endpoint', value);
+  Future<String?> remoteSyncEndpoint() => read('remote_sync.endpoint');
+
+  Future<void> saveRemoteSyncBusinessId(String value) =>
+      write('remote_sync.business_id', value);
+  Future<String?> remoteSyncBusinessId() => read('remote_sync.business_id');
+
+  Future<void> saveRemoteSyncToken(String value) =>
+      write('remote_sync.token', value);
+  Future<String?> remoteSyncToken() => read('remote_sync.token');
+
+  Future<void> saveRemoteSyncDeviceId(String value) =>
+      write('remote_sync.device_id', value);
+  Future<String?> remoteSyncDeviceId() => read('remote_sync.device_id');
+
   Future<void> saveWhatsAppAccessToken(String token) =>
       write('whatsapp.access_token', token);
   Future<String?> whatsAppAccessToken() => read('whatsapp.access_token');
@@ -39,6 +55,10 @@ class SecureConfigService {
       'webdav.password',
       'whatsapp.access_token',
       'updates.client_secret',
+      'remote_sync.endpoint',
+      'remote_sync.business_id',
+      'remote_sync.token',
+      'remote_sync.device_id',
     ]) {
       await delete(key);
     }
