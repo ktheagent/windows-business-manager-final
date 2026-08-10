@@ -60,7 +60,9 @@ CREATE TABLE IF NOT EXISTS remote_sync_commands(
     if (businessId.trim().isEmpty || token.trim().length < 32) {
       throw ArgumentError('Business ID and a strong access token are required.');
     }
-    await _config.saveRemoteSyncEndpoint(endpoint.toString().replaceAll(RegExp(r'/$'), ''));
+    await _config.saveRemoteSyncEndpoint(
+      endpoint.toString().replaceAll(RegExp(r'/$'), ''),
+    );
     await _config.saveRemoteSyncBusinessId(businessId.trim());
     await _config.saveRemoteSyncToken(token.trim());
     await _deviceId();
@@ -79,29 +81,37 @@ CREATE TABLE IF NOT EXISTS remote_sync_commands(
     await ensureSchema();
     final now = DateTime.now().toUtc();
     final db = await _database.database;
-    await db.insert('remote_sync_outbox', {
-      'event_id': '${now.microsecondsSinceEpoch}-${_hex(10)}',
-      'business_id': businessId,
-      'branch_id': branchId,
-      'device_id': await _deviceId(),
-      'entity_type': entityType,
-      'entity_id': entityId,
-      'operation': operation,
-      'payload_json': jsonEncode(payload),
-      'created_at': now.toIso8601String(),
-    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    await db.insert(
+      'remote_sync_outbox',
+      {
+        'event_id': '${now.microsecondsSinceEpoch}-${_hex(10)}',
+        'business_id': businessId,
+        'branch_id': branchId,
+        'device_id': await _deviceId(),
+        'entity_type': entityType,
+        'entity_id': entityId,
+        'operation': operation,
+        'payload_json': jsonEncode(payload),
+        'created_at': now.toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
   }
 
   Future<Map<String, Object?>> status() async {
     await ensureSchema();
     final db = await _database.database;
-    final pending = firstIntValue(await db.rawQuery(
-          'SELECT COUNT(*) FROM remote_sync_outbox WHERE acknowledged_at IS NULL',
-        )) ??
+    final pending = _firstIntValue(
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM remote_sync_outbox WHERE acknowledged_at IS NULL',
+          ),
+        ) ??
         0;
-    final commands = firstIntValue(await db.rawQuery(
-          "SELECT COUNT(*) FROM remote_sync_commands WHERE status='pending'",
-        )) ??
+    final commands = _firstIntValue(
+          await db.rawQuery(
+            "SELECT COUNT(*) FROM remote_sync_commands WHERE status='pending'",
+          ),
+        ) ??
         0;
     return {
       'configured': await _endpoint() != null,
@@ -118,6 +128,7 @@ CREATE TABLE IF NOT EXISTS remote_sync_commands(
     if (endpoint == null || businessId == null || token == null) {
       throw StateError('Remote sync is not configured.');
     }
+
     final headers = {
       'authorization': 'Bearer $token',
       'content-type': 'application/json',
@@ -133,16 +144,21 @@ CREATE TABLE IF NOT EXISTS remote_sync_commands(
     );
 
     if (rows.isNotEmpty) {
-      final events = rows.map((r) => {
-            'event_id': r['event_id'],
-            'branch_id': r['branch_id'],
-            'device_id': r['device_id'],
-            'entity_type': r['entity_type'],
-            'entity_id': r['entity_id'],
-            'operation': r['operation'],
-            'payload': jsonDecode(r['payload_json']! as String),
-            'created_at': r['created_at'],
-          }).toList();
+      final events = rows
+          .map(
+            (r) => {
+              'event_id': r['event_id'],
+              'branch_id': r['branch_id'],
+              'device_id': r['device_id'],
+              'entity_type': r['entity_type'],
+              'entity_id': r['entity_id'],
+              'operation': r['operation'],
+              'payload': jsonDecode(r['payload_json']! as String),
+              'created_at': r['created_at'],
+            },
+          )
+          .toList();
+
       final response = await _client
           .post(
             endpoint.resolve('/v1/sync/events'),
@@ -154,14 +170,18 @@ CREATE TABLE IF NOT EXISTS remote_sync_commands(
             }),
           )
           .timeout(const Duration(seconds: 20));
+
       if (response.statusCode < 200 || response.statusCode >= 300) {
         await db.rawUpdate(
           'UPDATE remote_sync_outbox SET attempts=attempts+1,last_error=? '
           'WHERE acknowledged_at IS NULL AND branch_id=?',
           ['HTTP ${response.statusCode}', branchId],
         );
-        throw StateError('Remote sync push failed: HTTP ${response.statusCode}.');
+        throw StateError(
+          'Remote sync push failed: HTTP ${response.statusCode}.',
+        );
       }
+
       final now = DateTime.now().toUtc().toIso8601String();
       await db.rawUpdate(
         'UPDATE remote_sync_outbox SET acknowledged_at=?,last_error=? '
@@ -172,30 +192,41 @@ CREATE TABLE IF NOT EXISTS remote_sync_commands(
 
     final response = await _client
         .get(
-          endpoint.resolve('/v1/sync/commands?business_id=$businessId&branch_id=$branchId'),
+          endpoint.resolve(
+            '/v1/sync/commands?business_id=$businessId&branch_id=$branchId',
+          ),
           headers: headers,
         )
         .timeout(const Duration(seconds: 20));
+
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError('Remote sync pull failed: HTTP ${response.statusCode}.');
+      throw StateError(
+        'Remote sync pull failed: HTTP ${response.statusCode}.',
+      );
     }
     if (response.body.trim().isEmpty) return;
+
     final body = jsonDecode(response.body);
     if (body is! Map || body['commands'] is! List) return;
+
     final batch = db.batch();
     for (final raw in body['commands'] as List) {
       if (raw is! Map) continue;
       final id = '${raw['command_id'] ?? ''}';
       final type = '${raw['type'] ?? ''}';
       if (id.isEmpty || type.isEmpty) continue;
-      batch.insert('remote_sync_commands', {
-        'command_id': id,
-        'branch_id': branchId,
-        'command_type': type,
-        'payload_json': jsonEncode(raw['payload'] ?? {}),
-        'status': 'pending',
-        'received_at': DateTime.now().toUtc().toIso8601String(),
-      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      batch.insert(
+        'remote_sync_commands',
+        {
+          'command_id': id,
+          'branch_id': branchId,
+          'command_type': type,
+          'payload_json': jsonEncode(raw['payload'] ?? {}),
+          'status': 'pending',
+          'received_at': DateTime.now().toUtc().toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
     }
     await batch.commit(noResult: true);
   }
@@ -214,6 +245,7 @@ CREATE TABLE IF NOT EXISTS remote_sync_commands(
   Future<Uri?> _endpoint() async {
     final raw = await _config.remoteSyncEndpoint();
     if (raw == null || raw.isEmpty) return null;
+
     final uri = Uri.tryParse(raw);
     if (uri == null || !_allowed(uri)) {
       throw StateError('Remote sync endpoint is invalid or insecure.');
@@ -224,6 +256,7 @@ CREATE TABLE IF NOT EXISTS remote_sync_commands(
   Future<String> _deviceId() async {
     final existing = await _config.remoteSyncDeviceId();
     if (existing != null && existing.isNotEmpty) return existing;
+
     final value = 'abm-${_hex(32)}';
     await _config.saveRemoteSyncDeviceId(value);
     return value;
@@ -232,12 +265,25 @@ CREATE TABLE IF NOT EXISTS remote_sync_commands(
   bool _allowed(Uri uri) {
     if (uri.scheme == 'https' && uri.host.isNotEmpty) return true;
     return uri.scheme == 'http' &&
-        (uri.host == 'localhost' || uri.host == '127.0.0.1' || uri.host == '::1');
+        (uri.host == 'localhost' ||
+            uri.host == '127.0.0.1' ||
+            uri.host == '::1');
+  }
+
+  int? _firstIntValue(List<Map<String, Object?>> rows) {
+    if (rows.isEmpty || rows.first.isEmpty) return null;
+    final value = rows.first.values.first;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse('$value');
   }
 
   String _hex(int length) {
     final random = Random.secure();
     const chars = '0123456789abcdef';
-    return List.generate(length, (_) => chars[random.nextInt(chars.length)]).join();
+    return List.generate(
+      length,
+      (_) => chars[random.nextInt(chars.length)],
+    ).join();
   }
 }
