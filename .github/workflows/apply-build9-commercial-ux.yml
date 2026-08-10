@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/apply-build9-commercial-ux.yml'
+      - 'tool/apply_build9_commercial_ux.py'
 
 permissions:
   contents: write
@@ -25,27 +26,6 @@ jobs:
           flutter-version: '3.44.5'
           channel: stable
           cache: true
-
-      - name: Normalize current POS patch anchor
-        shell: bash
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-
-          p = Path('lib/screens/pos_screen.dart')
-          text = p.read_text(encoding='utf-8')
-          old = """    if (checkout == null || !context.mounted) {
-            return;
-          }
-
-          final draft = SaleDraft("""
-          new = """    if (checkout == null || !context.mounted) {
-            return;
-          }
-          final draft = SaleDraft("""
-          if old in text:
-            p.write_text(text.replace(old, new, 1), encoding='utf-8')
-          PY
 
       - name: Apply targeted corrections
         run: python3 tool/apply_build9_commercial_ux.py
