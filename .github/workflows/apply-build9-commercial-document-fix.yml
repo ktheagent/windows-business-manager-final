@@ -1,0 +1,242 @@
+name: Apply Build 9 commercial document correction
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-build9-commercial-document-fix.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  correct-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.5'
+          channel: stable
+          cache: true
+
+      - name: Apply verified commercial document correction
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                    raise SystemExit(f'Expected text not found in {path}: {old!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          editor = Path('lib/commercial/screens/document_editor_dialog.dart')
+          text = editor.read_text(encoding='utf-8')
+          old_init = """  if (draft != null && draft.items.isNotEmpty) {
+                for (final item in draft.items) {
+                  _lines.add(_LineController.fromItem(item));
+                }
+              } else {
+                _addProductLine(widget.products.isEmpty ? null : widget.products.first);
+              }"""
+          # tolerate current dart formatting by using direct exact current source form
+          old_init = """    if (draft != null && draft.items.isNotEmpty) {
+              for (final item in draft.items) {
+                _lines.add(_LineController.fromItem(item));
+              }
+            } else {
+              _addProductLine(widget.products.isEmpty ? null : widget.products.first);
+            }"""
+          if old_init not in text:
+              old_init = """    if (draft != null && draft.items.isNotEmpty) {
+      for (final item in draft.items) {
+        _lines.add(_LineController.fromItem(item));
+      }
+    } else {
+      _addProductLine(widget.products.isEmpty ? null : widget.products.first);
+    }"""
+          if old_init not in text:
+              raise SystemExit('Document editor initialization pattern not found')
+          new_init = """    if (draft != null && draft.items.isNotEmpty) {
+      for (final item in draft.items) {
+        _lines.add(_LineController.fromItem(item));
+      }
+    }"""
+          text = text.replace(old_init, new_init, 1)
+
+          old_button = """                    onPressed: () => _addProductLine(
+                      widget.products.isEmpty ? null : widget.products.first,
+                    ),"""
+          if old_button not in text:
+              raise SystemExit('Product line button auto-selection pattern not found')
+          text = text.replace(
+              old_buttn,
+              """                    onPressed: () => _addProductLine(null),""",
+              1,
+          )
+          text = text.replace(
+              "child: Text('Manual service'),",
+              "child: Text('Select product / manual service'),",
+              1,
+          )
+          editor.write_text(text, encoding='utf-8')
+
+          replace_once('pubspec.yaml', 'version: 1.3.0+8', 'version: 1.3.0+9')
+
+          p = Path('.github/workflows/windows-build.yml')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('Build8', 'Build9').replace('Build 8', 'Build 9')
+          text = text.replace(r'1\.3\.0\+8', r'1\.3\.0\+9')
+          text = text.replace('1.3.0+8', '1.3.0+9')
+          text = text.replace('BUILD8-LOCAL-VALIDATION.json', 'BUILD9-LOCAL-VALIDATION.json')
+          p.write_text(text, encoding='utf-8')
+
+          replace_once('tool/package_windows.ps1', "$build = '8'", "$build = '9'")
+          replace_once('tool/package_source.ps1', "$build = '8'", "$build = '9")
+          replace_once(
+              'tool/build_installer.ps1',
+              "Airmonlink-Business-Manager-1.3.0-Build8",
+              "Airmonlink-Business-Manager-1.3.0-Build9",
+          )
+
+          p = Path('installer/airmonlink_business_manager.iss')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('#define MyAppBuild "8"', '#define MyAppBuild "9"')
+          text = text.replace('#define MyAppFileVersion "1.3.0.8"', '#define MyAppFileVersion "1.3.0.9"')
+          text = text.replace('Airmonlink-Business-Manager-1.3.0-Build8-Setup',
+                               'Airmonlink-Business-Manager-1.3.0-Build9-Setup')
+          p.write_text(text, encoding='utf-8')
+
+          p = Path('tool/validate_source_checkpoint.py')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace(r'1\.3\.0\+8', r'1\.3\.0\+9')
+          text = text.replace('1.3.0+8', '1.3.0+9')
+          text = text.replace('Build8', 'Build9').replace('Build 8 application identity', 'Build 9 application identity')
+          text = text.replace('BUILD8-SOURCE-VALIDATION.json', 'BUILD9-SOURCE-VALIDATION.json')
+          p.write_text(text, encoding='utf-8')
+
+          p = Path('tool/local_release_validation.py')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace(r'1\.3\.0\+8', r'1\.3\.0\+9')
+          text = text.replace('1.3.0+8', '1.3.0+9')
+          text = text.replace('BUILD8-IDENTITY', 'BUILD9-IDENTITY')
+          text = text.replace('Build8', 'Build9').replace('Build 8 application identity', 'Build 9 application identity')
+          text = text.replace('BUILD8-LOCAL-VALIDATION.json', 'BUILD9-LOCAL-VALIDATION.json')
+          p.write_text(text, encoding='utf-8')
+
+          p = Path('README.md')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('1.3.0+8', '1.3.0+9')
+          text = text.replace('Build8', 'Build9').replace('Build 8', 'Build 9')
+          text = text.replace('feature/build8-commercial-suite-complete', 'main')
+          stale = 'The repository intentionally does not include `pubspec.lock`''
+          if stale in text:
+              start = text.find(stale)
+              end = text.find('\n', start)
+              text = text[:start] + 'The committed `pubspec.lock` is enforced in GitHub Actions with `flutter pub get --enforce-lockfile`.' + text[end:]
+          p.write_text(text, encoding='utf-8')
+
+          p = Path('CHANGELOG.md')
+          text = p.read_text(encoding='utf-8')
+          entry = """## 1.3.0+9 — 2026-08-10
+
+          ### Commercial document correction
+          - New commercial documents no longer preselect the first inventory product.
+          - The Product line action now creates an unselected line; product description and pricing populate only after an explicit product choice or barcode/SKU add.
+          - Existing draft editing, manual service lines, document conversion, PDF/print workflows, and transaction persistence remain intact.
+
+          ### Release
+          - Advanced Windows release identity and package naming to Build 9.
+          - Formatting is normalized before the Build 9 Windows validation pipeline.
+
+          """
+          if not text.startswith('## 1.3.0+9'):
+              text = entry + text
+          p.write_text(text, encoding='utf-8')
+
+          test = Path('test/commercial_document_editor_test.dart')
+          test.write_text(r"""import 'package:airmonlink_business_manager/commercial/screens/document_editor_dialog.dart';
+          import 'package:airmonlink_business_manager/models/product.dart';
+          import 'package:flutter/material.dart';
+          import 'package:flutter_test/flutter_test.dart';
+
+          void main() {
+            Product product(int id, String name) => Product(
+                  id: id,
+                  name: name,
+                  sku: 'SKU-$id',
+                  barcode: 'BAR-id',
+                  category: 'Testing',
+                  costPrice: 5,
+                  sellingPrice: 10,
+                  stockQty: 25,
+                  lowStockLevel: 2,
+                  createdAt: DateTime(2026, 8, 10),
+                );
+
+            testWidgets('new commercial document does not preselect a product',
+                (tester) async {
+              final products = [product(1, 'Alpha Product'), product(2, 'Beta Product')];
+
+              await tester.pumpWidget(
+                MaterialApp(
+                  home: Scaffold(
+                    body: CommercialDocumentEditorDialog(
+                      products: products,
+                      customers: const [],
+                    ),
+                  ),
+                ),
+              );
+
+              expect(find.text('Add a product or service line.'), findsOneWidget);
+              expect(find.text('Alpha Product'), findsNothing);
+              expect(find.text('Beta Product'), findsNothing);
+
+              await tester.tap(find.widgetWithText(OutlinedButton, 'Product line'));
+              await tester.pump();
+
+              expect(find.text('Select product / manual service'), findsOneWidget);
+              expect(find.text('Alpha Product'), findsNothing);
+              expect(find.text('Beta Product'), findsNothing);
+            });
+          }
+          """, encoding='utf-8')
+          PY
+
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Format source
+        run: dart format .
+
+      - name: Run document selection regression test
+        run: flutter test test/commercial_document_editor_test.dart --reporter expanded
+
+      - name: Commit corrected Build 9 source
+        shell: bash
+        run: |
+          rm -f .github/workflows/apply-build9-commercial-document-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 1
+          fi
+          git commit -m "Fix commercial document product selection and release Build 9"
+          git push origin HEAD:main
+
+      - name: Dispatch Windows Build 9 validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run windows-build.yml --ref main
