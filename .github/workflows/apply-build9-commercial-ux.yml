@@ -2,6 +2,10 @@ name: Apply Build 9 commercial UX fixes
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-build9-commercial-ux.yml'
 
 permissions:
   contents: write
@@ -10,78 +14,44 @@ permissions:
 jobs:
   patch:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.5'
           channel: stable
           cache: true
+
       - name: Apply targeted corrections
-        shell: bash
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
+        run: python3 tool/apply_build9_commercial_ux.py
 
-          def rep(path, old, new):
-              p = Path(path)
-              t = p.read_text(encoding='utf-8')
-              if old not in t:
-                  raise SystemExit(f'pattern not found in {path}: {old[:80]!r}')
-              p.write_text(t.replace(old, new, 1), encoding='utf-8')
-
-          p='lib/commercial/screens/document_editor_dialog.dart'
-          rep(p, "    } else {\n      _addProductLine(widget.products.isEmpty ? null : widget.products.first);\n    }", "    }")
-          rep(p, "                    onPressed: () => _addProductLine(\n                      widget.products.isEmpty ? null : widget.products.first,\n                    ),", "                    onPressed: () => _addProductLine(null),")
-          rep(p, "                        child: Text('Manual service'),", "                        child: Text('Select product / manual service'),")
-          rep(p, "    if (query.isEmpty) return;", "    if (query.isEmpty) {\n      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar('Scan or enter a barcode or SKU first.'),
-      );\n      return;\n    }")
-          rep(p, "          content: Text('No active product matches that barcode.'),", "          content: Text('No active product matches that barcode or SKU.'),")
-          rep(p, "  factory _LineController.service() => _LineController.fromProduct(null);", "  factory _LineController.service() {\n    final line = _LineController.fromProduct(null);\n    line.unit.text = 'service';\n    return line;\n  }")
-          rep(p, "  void setProduct(Product? product) {\n    productId = product?.id;\n    if (product != null) {\n      description.text = product.name;\n      unitPrice.text = product.sellingPrice.toStringAsFixed(2);\n      costPrice.text = product.costPrice.toStringAsFixed(2);\n    }\n  }", "  void setProduct(Product? product) {\n    productId = product?.id;\n    if (product == null) {\n      description.clear();\n      unit.text = 'service';\n      unitPrice.text = '0.00';\n      costPrice.text = '0.00';\n      return;\n    }\n    unit.text = 'each';\n    description.text = product.name;\n    unitPrice.text = product.sellingPrice.toStringAsFixed(2);\n    costPrice.text = product.costPrice.toStringAsFixed(2);\n  }")
-          rep(p, "                    child: DropdownButtonFormField<String>(\n                      initialValue: _type,", "                    child: DropdownButtonFormField<String>,\n                      initialValue: _type,\n                      style: const TextStyle(color: Color(0xFF0F2AAA), fontWeight: FontWeight.w800),\n                      dropdownColor: Colors.white,")
-          rep(p, "                    child: DropdownButtonFormField<int?>(\n                      initialValue: _customerId,", "                    child: DropdownButtonFormField<int?>(\n                      initialValue: _customerId,\n                      style: const TextStyle(color: Color(0xFF0F2AAA), fontWeight: FontWeight.w700),\n                      dropdownColor: Colors.white,")
-          rep(p, "                  child: DropdownButtonFormField<int?>(\n                    initialValue: line.productId,", "                  child: DropdownButtonFormField<int?>(\n                    initialValue: line.productId,\n                    style: const TextStyle(color: Color(0xFF0F2A5A), fontWeight: FontWeight.w800),\n                    dropdownColor: Colors.white,")
-
-          p='lib/core/app_theme.dart'
-          rep(p, "        hintStyle: const TextStyle(color: muted),\n        labelStyle: const TextStyle(\n          color: muted,\n          fontWeight: FontWeight.w600,\n        ),", "        hintStyle: const TextStyle(color: Color(0xFF52637A), fontWeight: FontWeight.w500),\n        labelStyle: const TextStyle(color: primary, fontWeight: FontWeight.w700),\n        floatingLabelStyle: const TextStyle(color: accent, fontWeight: FontWeight.w800),")
-          rep(p, "      dividerTheme: DividerThemeData(", "      textSelectionTheme: TextSelectionThemeData(cursorColor: accent, selectionColor: accent.withValues(alpha: 0.22), selectionHandleColor: accent),\n      dividerTheme: DividerThemeData(")
-
-          p='lib/commercial/screens/commercial_suite_screen.dart'
-          rep(p, "              child: TabBar(\n                isScrollable: true,\n                tabAlignment: TabAlignment.start,", "              child: TabBar(\n                isScrollable: true,\n                tabAlignment: TabAlignment.start,\n                labelColor: const Color(0xFF0F2AAA),\n                unselectedLabelColor: const Color(0xFF52637A), 
-                indicatorColor: const Color(0xFF2F6DBB),\n                labelStyle: const TextStyle(fontWeight: FontWeight.w800),\n                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),")
-          rep(p, "      if (registers.isEmpty) {\n        throw StateError('No cash register is configured.');\n      }\n      await widget.state.commercial.openCashSession(", "      if (registers.isEmpty) {\n        await widget.state.commercial.createCashRegister(actor: widget.user, name: 'Main Register');\n        registers = await widget.state.commercial.listCashRegisters(widget.user);\n      }\n      if (registers.isEmpty) {\n        throw StateError('Unable to configure a cash register.');\n      }\n      await widget.state.commercial.openCashSession(")
-
-          p='lib/screens/pos_screen.dart'
-          rep(p, "import '../core/formatters.dart';", "import '../commercial/models/commercial_models.dart';\nimport '../core/formatters.dart';")
-          rep(p, "            const SizedBox(height: 14),\n            FilledButton.icon(", "            const SizedBox(height: 14),\n            if (state.currentCashSession == null) ...[\n              OutlinedButton.icon(\n                onPressed: state.can(CommercialPermission.cashManage) ? () => _openCashShift(context, state) : null,\n                icon: const Icon(Icons.point_of_sale_outlined),\n                label: const Text('Open cash shift'),\n              ),\n              const SizedBox(height: 8),\n              Text(\n                state.can(CommercialPermission.cashManage) ? 'Cash sales require an open shift.' : 'Cash sales require an open shift. Ask an authorized user to open one.',\n                style: Theme.of(context).textTheme.bodySmall,\n              ),\n              const SizedBox(height: 8),\n            ],\n            FilledButton.icon(")
-          rep(p, "  Future<void> _checkout(BuildContext context, AppState state) async {", "  Future<bool> _openCashShift(BuildContext context, AppState state) async {\n    if (state.currentCashSession != null) return true;\n    final user = state.currentUser;\n    if (user == null) { showFailure(context, 'Sign in before opening a cash shift.'); return false; }\n    if (!user.can(CommercialPermission.cashManage)) { showFailure(context, 'Cash sale requires an open shift. Ask an authorized user to open one.'); return false; }\n    try {\n      var registers = await state.commercial.listCashRegisters(user);\n      if (registers.isEmpty) {\n        await state.commercial.createCashRegister(actor: user, name: 'Main Register');\n        registers = await state.commercial.listCashRegisters(user);\n      }\n      if (registers.isEmpty) throw StateError('Unable to configure a cash register.');\n      await state.commercial.openCashSession(actor: user, registerId: registers.first['id'] as int, openingFloat: 0, note: 'Opened from Point of Sale');\n      await state.refreshAll();\n      if (!context.mounted) return false;\n      showSuccess(context, 'Cash shift opened.');\n      return state.currentCashSession != null;\n    } catch (error) { if (context.mounted) showFailure(context, error); return false; }\n  }\n\n  Future<void> _checkout(BuildContext context, AppState state) async {\n    final discountController = TextEditingController(text: '0.00');")
-          rep(p, "    if (checkout == null || !contex.mounted) {\n      return;\n    }\n    final draft = SaleDraft(", "    if (checkout == null || !contex.mounted) {\n      return;\n    }\n    if (checkout.paymentMethod == 'Cash' && state.currentCashSession == null) {\n      final opened = await _openCashShift(context, state);\n      if (!opened || !contex.mounted) return;\n    }\n    final draft = SaleDraft(")
-          rep(p, "                    initialValue: paymentMethod,\n                    decoration: const InputDecoration(", "                    initialValue: paymentMethod,\n                    style: const TextStyle(color: Color(0xFF0F2AAA), fontWeight: FontWeight.w700),\n                    dropdownColor: Colors.white,\n                    decoration: const InputDecoration(")
-          rep(p, "                    initialValue: customerId,\n                    decoration: InputDecoration(", "                    initialValue: customerId,\n                    style: const TextStyle(color: Color(0xFF0F2A5A), fontWeight: FontWeight.w700),\n                    dropdownColor: Colors.white,\n                    decoration: InputDecoration(")
-
-          rep('pubspec.yaml', 'version: 1.3.0+8', 'version: 1.3.0+9')
-          PY
-      - name: Dependencies
+      - name: Resolve dependencies
         run: flutter pub get --enforce-lockfile
-      - name: Format
+
+      - name: Format source
         run: dart format .
+
       - name: Analyze
         run: flutter analyze --no-fatal-infos
+
       - name: Tests
         run: flutter test --reporter expanded
-      - name: Commit Build 9
+
+      - name: Commit Build 9 source
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm -f .github/workflows/apply-build9-commercial-ux.yml
+          git rm -f .github/workflows/apply-build9-commercial-ux.yml
+          git rm -f tool/apply_build9_commercial_ux.py
           git add -A
           git commit -m "Fix commercial document entry, visibility and cash shift flow"
           git push origin HEAD:main
+
       - name: Start Windows build
         env:
           GH_TOKEN: ${{ github.token }}
