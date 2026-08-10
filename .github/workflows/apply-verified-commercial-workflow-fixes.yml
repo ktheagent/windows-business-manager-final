@@ -1,0 +1,54 @@
+name: Apply verified commercial workflow fixes
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tool/apply_verified_commercial_workflow_fixes.py'
+      - '.github/workflows/apply-verified-commercial-workflow-fixes.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  validate-and-apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.5'
+          channel: stable
+          cache: true
+
+      - name: Apply verified workflow fixes
+        run: python3 tool/apply_verified_commercial_workflow_fixes.py
+
+      - name: Resolve dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Format changed Dart
+        run: dart format lib/commercial/screens/commercial_suite_screen.dart
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Test
+        run: flutter test --reporter expanded
+
+      - name: Commit validated source
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f tool/apply_verified_commercial_workflow_fixes.py
+          git rm -f .github/workflows/apply-verified-commercial-workflow-fixes.yml
+          git add -A
+          git commit -m "Fix verified commercial workflow defaults and stock counting"
+          git push origin HEAD:main
