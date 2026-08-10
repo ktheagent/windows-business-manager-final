@@ -9,15 +9,17 @@ def write(path: str, text: str) -> None:
 def replace_once(text: str, old: str, new: str, path: str) -> str:
     count = text.count(old)
     if count != 1:
-        raise SystemExit(f"{path}: expected one occurrence, found {count}: {old[:100]!r}")
+        raise SystemExit(
+            f"{path}: expected one occurrence, found {count}: {old[:120]!r}"
+        )
     return text.replace(old, new, 1)
 
-# Make document numbers transactionally collision-safe.
+# Make commercial document numbers collision-safe inside the existing transaction.
 path = "lib/commercial/services/commercial_service.dart"
 text = read(path)
 text = replace_once(
     text,
-    "'dicument_no': _number(_documentPrefix(draft.type), now),
+    "'document_no': _number(_documentPrefix(draft.type), now),",
     """'document_no': await _uniqueDocumentNumber(
           txn,
           prefix: _documentPrefix(draft.type),
@@ -82,18 +84,17 @@ text = replace_once(
 )
 text = replace_once(
     text,
-    """              const SizedBox(height: 12),
-              Expanded(
+    """              Expanded(
                 child: _lines.isEmpty
 """,
-    """              const SizedBox(height: 12),
-              SizedBox(
+    """            SizedBox(
                 height: 260,
                 child: _lines.isEmpty
-"",
+""",
     path,
 )
-# Expand dropdown content within its available field width.
+
+# Keep selected dropdown content inside its field width.
 text = text.replace(
     "child: DropdownButtonFormField<String>(\n",
     "child: DropdownButtonFormField<String>(\n                      isExpanded: true,\n",
@@ -102,7 +103,8 @@ text = text.replace(
     "child: DropdownButtonFormField<int?>(\n",
     "child: DropdownButtonFormField<int?>(\n                      isExpanded: true,\n",
 )
-# Compact the barcode/product toolbar enough for the 800x600 regression surface.
+
+# Compact the barcode/product/service toolbar so it fits an 800x600 surface.
 text = replace_once(
     text,
     """                  Expanded(
@@ -116,12 +118,24 @@ text = replace_once(
 """,
     path,
 )
-text = text.replace("label: const Text('Barcode add'),", "label: const Text('Add'),", 1)
-text = text.replace("label: const Text('Product line'),", "label: const Text('Product'),", 1)
-text = text.replace("label: const Text('Service line')", "label: const Text('Service')", 1)
+text = text.replace(
+    "label: const Text('Barcode add'),",
+    "label: const Text('Add'),",
+    1,
+)
+text = text.replace(
+    "label: const Text('Product line'),",
+    "label: const Text('Product'),",
+    1,
+)
+text = text.replace(
+    "label: const Text('Service line'),",
+    "label: const Text('Service'),",
+    1,
+)
 write(path, text)
 
-# Add a Build 9 regression test for the empty document editor state and compact layout.
+# Add a Build 9 regression test for empty-by-default document entry and compact layout.
 test_path = Path("test/build9_workflow_regression_test.dart")
 test_path.write_text(
     """import 'package:airmonlink_business_manager/commercial/screens/document_editor_dialog.dart';
@@ -166,8 +180,7 @@ void main() {
                 ),
               ),
             ),
-          ),
-        ),
+         ),
       );
 
       await tester.tap(find.text('Open editor'));
@@ -177,7 +190,7 @@ void main() {
       expect(find.text('Alpha Product'), findsNothing);
       expect(tester.takeException(), isNull);
     },
-   );
+  );
 }
 """,
     encoding="utf-8",
