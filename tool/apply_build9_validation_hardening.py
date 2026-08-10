@@ -65,7 +65,7 @@ helper = """  static Future<String> _uniqueDocumentNumber(
     }
   }
 
-""
+"""
 text = replace_once(text, marker, helper + marker, path)
 write(path, text)
 
@@ -76,7 +76,7 @@ text = replace_once(
     text,
     """          child: Column(
             children: [
-"",
+""",
     """          child: ListView(
             children: [
 """,
@@ -101,7 +101,7 @@ text = text.replace(
 )
 text = text.replace(
     "child: DropdownButtonFormField<int?>(\n",
-    "child: DropdownButtonFormField<int?>(\n                      isExpanded: true,\n",
+    "child: DropdownButtonFormField<int>((\n                      isExpanded: true,\n",
 )
 
 # Compact the barcode/product/service toolbar so it fits an 800x600 surface.
@@ -180,7 +180,8 @@ void main() {
                 ),
               ),
             ),
-         ),
+          ),
+        ),
       );
 
       await tester.tap(find.text('Open editor'));
