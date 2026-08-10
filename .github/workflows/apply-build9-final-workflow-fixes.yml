@@ -35,22 +35,27 @@ jobs:
 
           path = Path('tool/apply_build9_final_workflow_fixes.py')
           text = path.read_text(encoding='utf-8')
-          lines = text.splitlines()
-          repaired = 0
-          for index, line in enumerate(lines):
-            if (
-                line.strip() == '""'
-                and index > 0
-                and 'final draft = SaleDraft(' in lines[index - 1]
-            ):
-                lines[index] = line.replace('""', '"""')
-                repaired += 1
-          text = '\n'.join(lines) + '\n'
-          text = text.replace("    r 'bool(re.search", "    r'bool(re.search")
+
+          bad_quote = '    final draft = SaleDraft(\n"",\n'
+          good_quote = '    final draft = SaleDraft(\n""",\n'
+          quote_count = text.count(bad_quote)
+          if quote_count != 1:
+              raise SystemExit(f'Expected exactly 1 malformed POS quote block, found {quote_count}')
+          text = text.replace(bad_quote, good_quote, 1)
+
+          bad_raw = "    r 'bool(re.search"
+          good_raw = "    r'bool(re.search"
+          raw_count = text.count(bad_raw)
+          if raw_count != 1:
+              raise SystemExit(f'Expected exactly 1 malformed raw-string token, found {raw_count}')
+          text = text.replace(bad_raw, good_raw, 1)
+
           path.write_text(text, encoding='utf-8')
           compile(text, str(path), 'exec')
-          print(f'Final patch script syntax OK; repaired {repaired} truncated triple quote(s).')
+          print('Final Build 9 patch script syntax OK.')
           PY
+          python3 -m py_compile tool/apply_build9_final_workflow_fixes.py
+          python3 -m py_compile tool/apply_build9_validation_hardening.py
 
       - name: Apply final Build 9 corrections
         run: python3 tool/apply_build9_final_workflow_fixes.py
