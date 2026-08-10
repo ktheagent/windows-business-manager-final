@@ -27,6 +27,31 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Repair and syntax-check final patch script
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('tool/apply_build9_final_workflow_fixes.py')
+          text = path.read_text(encoding='utf-8')
+          lines = text.splitlines()
+          repaired = 0
+          for index, line in enumerate(lines):
+            if (
+                line.strip() == '""'
+                and index > 0
+                and 'final draft = SaleDraft(' in lines[index - 1]
+            ):
+                lines[index] = line.replace('""', '"""')
+                repaired += 1
+          text = '\n'.join(lines) + '\n'
+          text = text.replace("    r 'bool(re.search", "    r'bool(re.search")
+          path.write_text(text, encoding='utf-8')
+          compile(text, str(path), 'exec')
+          print(f'Final patch script syntax OK; repaired {repaired} truncated triple quote(s).')
+          PY
+
       - name: Apply final Build 9 corrections
         run: python3 tool/apply_build9_final_workflow_fixes.py
 
