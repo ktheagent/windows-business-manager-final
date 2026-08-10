@@ -54,7 +54,7 @@ jobs:
         run: |
           set +e
           flutter analyze --no-fatal-infos 2>&1 | tee analyze.log
-          status=${PIPESTATUS_0]}
+          status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
             echo "Analyzer failed; publishing diagnostic annotations."
             grep -E '(^|[[:space:]])error([[:space:]]| • |-)' analyze.log | head -40 | while IFS= read -r line; do
