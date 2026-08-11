@@ -101,7 +101,7 @@ text = text.replace(
 )
 text = text.replace(
     "child: DropdownButtonFormField<int?>(\n",
-    "child: DropdownButtonFormField<int>((\n                      isExpanded: true,\n",
+    "child: DropdownButtonFormField<int?>(\n                      isExpanded: true,\n",
 )
 
 # Compact the barcode/product/service toolbar so it fits an 800x600 surface.
