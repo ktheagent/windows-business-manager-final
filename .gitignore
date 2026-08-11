@@ -3,7 +3,7 @@
 .pub/
 build/
 coverage/
-.flutter-plugins
+.slutter-plugins
 .flutter-plugins-dependencies
 .idea/
 .vscode/
@@ -14,3 +14,5 @@ windows/flutter/ephemeral/
 *.sqlite
 *.bak
 .env
+__pycache__/
+*.pyc
