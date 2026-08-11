@@ -32,7 +32,6 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
           def replace_exact(text: str, old: str, new: str, label: str) -> str:
               count = text.count(old)
               if count != 1:
@@ -42,7 +41,6 @@ jobs:
           final_path = Path('tool/apply_build9_final_workflow_fixes.py')
           final_text = final_path.read_text(encoding='utf-8')
 
-          # Normalize historical malformed Python literals retained in the temporary generator.
           final_text = final_text.replace(
               '    final draft = SaleDraft(\n"",\n',
               '    final draft = SaleDraft(\n""",\n',
@@ -57,7 +55,6 @@ jobs:
               r'(?m)^version:\s*1\.3\.0\+9\s*$',
           )
 
-          # Make the generated Dart return-flow ternary unambiguous to the Dart parser.
           final_text = replace_exact(
               final_text,
               "        cashSessionId: refundMethod == 'Cash'\n"
@@ -73,8 +70,6 @@ jobs:
 
           hardening_path = Path('tool/apply_build9_validation_hardening.py')
           hardening_text = hardening_path.read_text(encoding='utf-8')
-
-          # Close tester.pumpWidget(...) in the generated Build 9 widget regression.
           hardening_text = replace_exact(
               hardening_text,
               '    "      ),",\n'
@@ -88,7 +83,6 @@ jobs:
           )
           hardening_path.write_text(hardening_text, encoding='utf-8')
           compile(hardening_text, str(hardening_path), 'exec')
-
           print('Both Build 9 patch generators compile after deterministic normalization.')
           PY
           python3 -m py_compile tool/apply_build9_final_workflow_fixes.py
@@ -100,11 +94,53 @@ jobs:
       - name: Apply validation hardening
         run: python3 tool/apply_build9_validation_hardening.py
 
+      - name: Remove now-unused Build 9 theme alias
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('lib/core/app_theme.dart')
+          text = path.read_text(encoding='utf-8')
+          declaration = '    const muted = PremiumGlassPalette.muted;\n'
+
+          count = text.count(declaration)
+          if count != 1:
+              raise SystemExit(
+                  f'{path}: expected exactly one muted declaration after Build 9 theme patch, found {count}'
+              )
+
+          updated = text.replace(declaration, '', 1)
+          remaining = re.findall(r'\bmuted\b', updated)
+          if remaining:
+              raise SystemExit(
+                  f'{path}: refusing cleanup because {len(remaining)} muted reference(s) remain'
+              )
+
+          required = [
+              'color: Color(0xFF4A5568)',
+              'color: primary',
+              'floatingLabelStyle: const TextStyle(',
+          ]
+          for fragment in required:
+              if fragment not in updated:
+                  raise SystemExit(
+                      f'{path}: expected Build 9 contrast fragment missing: {fragment!r}'
+                  )
+
+          path.write_text(updated, encoding='utf-8')
+          print('Verified Build 9 contrast styles and removed the now-unused muted alias.')
+          PY
+
       - name: Resolve dependencies
         run: flutter pub get --enforce-lockfile
 
       - name: Format changed Dart
         run: dart format lib/commercial/screens/document_editor_dialog.dart lib/screens/pos_screen.dart lib/commercial/screens/commercial_suite_screen.dart lib/commercial/services/commercial_service.dart lib/core/app_theme.dart test/build9_workflow_regression_test.dart
+
+      - name: Check generated diff
+        run: git diff --check
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
