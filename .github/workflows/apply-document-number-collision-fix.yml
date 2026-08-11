@@ -1,0 +1,59 @@
+name: Apply document number collision fix
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tool/apply_document_number_collision_fix.py'
+      - '.github/workflows/apply-document-number-collision-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.5'
+          channel: stable
+          cache: true
+
+      - name: Syntax-check patch script
+        run: pythn3 -m py_compile tool/apply_document_number_collision_fix.py
+
+      - name: Apply collision fix
+        run: python3 tool/apply_document_number_collision_fix.py
+
+      - name: Format commercial service
+        run: dart format lib/commercial/services/commercial_service.dart
+
+      - name: Resolve dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Test document duplication regression
+        run: flutter test test/build8_regression_test.dart --name "document draft edit duplicate cancellation and history persist" --reporter expanded
+
+      - name: Test full suite
+        run: flutter test --reporter expanded
+
+      - name: Commit validated collision fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f tool/apply_document_number_collision_fix.py
+          git rm -f .github/workflows/apply-document-number-collision-fix.yml
+          git add -A
+          git commit -m "Fix commercial document number collisions"
+          git push origin HEAD:main
