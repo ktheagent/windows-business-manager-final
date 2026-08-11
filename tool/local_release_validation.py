@@ -51,9 +51,9 @@ commercial = read("lib/commercial/services/commercial_service.dart")
 workflow = read(".github/workflows/windows-build.yml")
 
 record(
-    "BUILD8-IDENTITY",
-    bool(re.search(r"(?m)^version:\s*1\.3\.0\+8\s*$", pubspec)),
-    "pubspec version must be 1.3.0+8",
+    "BUILD9-IDENTITY",
+    bool(re.search(r"(?m)^version:\s*1\.3\.0\+9\s*$", pubspec)),
+    "pubspec version must be 1.3.0+9",
 )
 
 migration_tokens = [
@@ -90,10 +90,10 @@ workflow_tokens = [
     "flutter analyze",
     "flutter test",
     "flutter build windows --release",
-    "Build8-Setup.exe",
-    "Build8-Portable.zip",
-    "Build8-Full-Source.zip",
-    "Build8-SHA256SUMS.txt",
+    "Build9-Setup.exe",
+    "Build9-Portable.zip",
+    "Build9-Full-Source.zip",
+    "Build9-SHA256SUMS.txt",
     "Get-FileHash",
     "if-no-files-found: error",
 ]
@@ -128,7 +128,7 @@ payload = {
     "summary": summary,
     "results": RESULTS,
 }
-(ROOT / "BUILD8-LOCAL-VALIDATION.json").write_text(
+(ROOT / "BUILD9-LOCAL-VALIDATION.json").write_text(
     json.dumps(payload, indent=2) + "\n",
     encoding="utf-8",
 )

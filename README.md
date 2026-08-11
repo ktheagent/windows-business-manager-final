@@ -5,18 +5,28 @@ Airmonlink Business Manager is an offline-first Windows point-of-sale and commer
 ## Release identity
 
 - Product: `Airmonlink Business Manager`
-- Version: `1.3.0+8`
+- Version: `1.3.0+9`
 - Target platform: Windows 10 and Windows 11, x64
 - CI toolchain: Flutter `3.44.5`
-- Release branch: `feature/build8-commercial-suite-complete`
+- Release branch: `main`
 - Executable: `airmonlink_business_manager.exe`
 
 Expected Windows artifacts:
 
-- `Airmonlink-Business-Manager-1.3.0-Build8-Setup.exe`
-- `Airmonlink-Business-Manager-1.3.0-Build8-Portable.zip`
-- `Airmonlink-Business-Manager-1.3.0-Build8-Full-Source.zip`
-- `Airmonlink-Business-Manager-1.3.0-Build8-SHA256SUMS.txt`
+- `Airmonlink-Business-Manager-1.3.0-Build9-Setup.exe`
+- `Airmonlink-Business-Manager-1.3.0-Build9-Portable.zip`
+- `Airmonlink-Business-Manager-1.3.0-Build9-Full-Source.zip`
+- `Airmonlink-Business-Manager-1.3.0-Build9-SHA256SUMS.txt`
+
+## Build 9 corrective workflow release
+
+- New commercial documents start empty and never auto-select the first product.
+- Product lines require an explicit product choice or manual entry; service lines remain distinct.
+- POS cash checkout provides an actionable open-cash-shift flow with register selection and opening float.
+- Returns require explicit sale, item, quantity, reason, refund method and restock choices.
+- Purchase orders, stock adjustments, stock counts and cash registers use explicit user selection.
+- Input labels and hints use higher contrast for better readability.
+- Database schema remains version 8; no user-data migration is required for this UI/workflow correction.
 
 ## Existing functions preserved
 

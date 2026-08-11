@@ -80,8 +80,6 @@ class _CommercialDocumentEditorDialogState
       for (final item in draft.items) {
         _lines.add(_LineController.fromItem(item));
       }
-    } else {
-      _addProductLine(widget.products.isEmpty ? null : widget.products.first);
     }
   }
 
@@ -113,7 +111,12 @@ class _CommercialDocumentEditorDialogState
 
   void _addBarcodeProduct() {
     final query = _barcode.text.trim().toLowerCase();
-    if (query.isEmpty) return;
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Scan or enter a barcode or SKU first.')),
+      );
+      return;
+    }
     Product? match;
     for (final product in widget.products) {
       if (product.barcode.trim().toLowerCase() == query ||
@@ -125,7 +128,7 @@ class _CommercialDocumentEditorDialogState
     if (match == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No active product matches that barcode.'),
+          content: Text('No product matches that barcode or SKU.'),
         ),
       );
       return;
@@ -185,7 +188,7 @@ class _CommercialDocumentEditorDialogState
         height: MediaQuery.sizeOf(context).height * 0.78,
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
             children: [
               Wrap(
                 spacing: 12,
@@ -194,6 +197,7 @@ class _CommercialDocumentEditorDialogState
                   SizedBox(
                     width: 250,
                     child: DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: _type,
                       decoration: const InputDecoration(
                         labelText: 'Document type',
@@ -202,7 +206,10 @@ class _CommercialDocumentEditorDialogState
                           .map(
                             (entry) => DropdownMenuItem(
                               value: entry.key,
-                              child: Text(entry.value),
+                              child: Text(
+                                entry.value,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           )
                           .toList(growable: false),
@@ -213,17 +220,24 @@ class _CommercialDocumentEditorDialogState
                   SizedBox(
                     width: 280,
                     child: DropdownButtonFormField<int?>(
+                      isExpanded: true,
                       initialValue: _customerId,
                       decoration: const InputDecoration(labelText: 'Customer'),
                       items: [
                         const DropdownMenuItem<int?>(
                           value: null,
-                          child: Text('Walk-in / unassigned'),
+                          child: Text(
+                            'Walk-in / unassigned',
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         for (final customer in widget.customers)
                           DropdownMenuItem<int?>(
                             value: customer.id,
-                            child: Text(customer.name),
+                            child: Text(
+                              customer.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                       ],
                       onChanged: (value) => setState(() => _customerId = value),
@@ -247,9 +261,13 @@ class _CommercialDocumentEditorDialogState
                 ],
               ),
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Expanded(
+                  SizedBox(
+                    width: 260,
                     child: TextField(
                       controller: _barcode,
                       decoration: const InputDecoration(
@@ -263,26 +281,25 @@ class _CommercialDocumentEditorDialogState
                   FilledButton.icon(
                     onPressed: _addBarcodeProduct,
                     icon: const Icon(Icons.add),
-                    label: const Text('Barcode add'),
+                    label: const Text('Add'),
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
-                    onPressed: () => _addProductLine(
-                      widget.products.isEmpty ? null : widget.products.first,
-                    ),
+                    onPressed: () => _addProductLine(null),
                     icon: const Icon(Icons.inventory_2_outlined),
-                    label: const Text('Product line'),
+                    label: const Text('Product'),
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
                     onPressed: _addServiceLine,
                     icon: const Icon(Icons.miscellaneous_services_outlined),
-                    label: const Text('Service line'),
+                    label: const Text('Service'),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              Expanded(
+              SizedBox(
+                height: 260,
                 child: _lines.isEmpty
                     ? const Center(
                         child: Text('Add a product or service line.'),
@@ -433,6 +450,7 @@ class _LineEditor extends StatelessWidget {
                 Expanded(
                   flex: 3,
                   child: DropdownButtonFormField<int?>(
+                    isExpanded: true,
                     initialValue: line.productId,
                     decoration: const InputDecoration(
                       labelText: 'Product / service',
@@ -440,12 +458,18 @@ class _LineEditor extends StatelessWidget {
                     items: [
                       const DropdownMenuItem<int?>(
                         value: null,
-                        child: Text('Manual service'),
+                        child: Text(
+                          'Select product / manual line',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       for (final product in products)
                         DropdownMenuItem<int?>(
                           value: product.id,
-                          child: Text(product.name),
+                          child: Text(
+                            product.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                     ],
                     onChanged: (value) {
@@ -672,7 +696,17 @@ class _LineController {
     taxInclusive: false,
   );
 
-  factory _LineController.service() => _LineController.fromProduct(null);
+  factory _LineController.service() => _LineController(
+    productId: null,
+    description: TextEditingController(),
+    quantity: TextEditingController(text: '1'),
+    unit: TextEditingController(text: 'service'),
+    unitPrice: TextEditingController(text: '0.00'),
+    costPrice: TextEditingController(text: '0.00'),
+    discount: TextEditingController(text: '0.00'),
+    taxRate: TextEditingController(text: '0.00'),
+    taxInclusive: false,
+  );
 
   factory _LineController.fromItem(
     CommercialDocumentItem item,
@@ -701,11 +735,17 @@ class _LineController {
 
   void setProduct(Product? product) {
     productId = product?.id;
-    if (product != null) {
-      description.text = product.name;
-      unitPrice.text = product.sellingPrice.toStringAsFixed(2);
-      costPrice.text = product.costPrice.toStringAsFixed(2);
+    if (product == null) {
+      description.clear();
+      unit.text = 'each';
+      unitPrice.text = '0.00';
+      costPrice.text = '0.00';
+      return;
     }
+    description.text = product.name;
+    unit.text = 'each';
+    unitPrice.text = product.sellingPrice.toStringAsFixed(2);
+    costPrice.text = product.costPrice.toStringAsFixed(2);
   }
 
   CommercialDocumentItem toItem() => CommercialDocumentItem(

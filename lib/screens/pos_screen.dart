@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 
 import '../core/formatters.dart';
+import '../commercial/models/commercial_models.dart';
 import '../models/product.dart';
 import '../models/sale.dart';
 import '../state/app_state.dart';
@@ -354,6 +355,37 @@ class _PosScreenState extends State<PosScreen> {
               ],
             ),
             const SizedBox(height: 14),
+            if (state.currentCashSession == null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Cash sales require an open cash shift. Open one here before taking cash.',
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    OutlinedButton.icon(
+                      onPressed:
+                          state.currentUser?.can(
+                                CommercialPermission.cashManage,
+                              ) ==
+                              true
+                          ? () => _openCashShift(context, state)
+                          : null,
+                      icon: const Icon(Icons.point_of_sale_outlined),
+                      label: const Text('Open cash shift'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             FilledButton.icon(
               onPressed: _cart.isEmpty ? null : () => _checkout(context, state),
               icon: const Icon(Icons.payments_outlined),
@@ -401,6 +433,107 @@ class _PosScreenState extends State<PosScreen> {
         _cart[id] = _CartLine(product: product, quantity: next);
       }
     });
+  }
+
+  Future<double?> _askOpeningFloat(BuildContext context) async {
+    final controller = TextEditingController(text: '0.00');
+    final result = await showDialog<double>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Opening cash float'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+            labelText: 'Opening cash amount',
+            helperText: 'Enter 0 if the drawer starts empty.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = double.tryParse(controller.text.trim());
+              if (value == null || value < 0) return;
+              Navigator.pop(dialogContext, value);
+            },
+            child: const Text('Open shift'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return result;
+  }
+
+  Future<bool> _openCashShift(BuildContext context, AppState state) async {
+    final user = state.currentUser;
+    if (user == null) {
+      showFailure(context, 'Sign in before opening a cash shift.');
+      return false;
+    }
+    if (!user.can(CommercialPermission.cashManage)) {
+      showFailure(
+        context,
+        'Your staff role cannot open a cash shift. Ask a manager or owner.',
+      );
+      return false;
+    }
+    try {
+      var registers = await state.commercial.listCashRegisters(user);
+      if (registers.isEmpty) {
+        await state.commercial.createCashRegister(
+          actor: user,
+          name: 'Main Register',
+        );
+        registers = await state.commercial.listCashRegisters(user);
+      }
+      if (!context.mounted || registers.isEmpty) return false;
+
+      int? registerId;
+      if (registers.length == 1) {
+        registerId = registers.first['id'] as int;
+      } else {
+        registerId = await showDialog<int>(
+          context: context,
+          builder: (dialogContext) => SimpleDialog(
+            title: const Text('Select cash register'),
+            children: [
+              for (final register in registers)
+                SimpleDialogOption(
+                  onPressed: () =>
+                      Navigator.pop(dialogContext, register['id'] as int),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(register['name'] as String),
+                  ),
+                ),
+            ],
+          ),
+        );
+      }
+      if (registerId == null || !context.mounted) return false;
+
+      final openingFloat = await _askOpeningFloat(context);
+      if (openingFloat == null || !context.mounted) return false;
+
+      await state.commercial.openCashSession(
+        actor: user,
+        registerId: registerId,
+        openingFloat: openingFloat,
+        note: 'Opened from point of sale',
+      );
+      await state.refreshAll();
+      if (context.mounted) showSuccess(context, 'Cash shift opened.');
+      return true;
+    } catch (error) {
+      if (context.mounted) showFailure(context, error);
+      return false;
+    }
   }
 
   Future<void> _checkout(BuildContext context, AppState state) async {
@@ -541,6 +674,11 @@ class _PosScreenState extends State<PosScreen> {
 
     if (checkout == null || !context.mounted) {
       return;
+    }
+
+    if (checkout.paymentMethod == 'Cash' && state.currentCashSession == null) {
+      final opened = await _openCashShift(context, state);
+      if (!opened || !context.mounted) return;
     }
 
     final draft = SaleDraft(

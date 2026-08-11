@@ -62,11 +62,11 @@ for relative in ["pubspec.yaml", ".github/workflows/windows-build.yml"]:
         record(f"YAML parse: {relative}", "INCOMPLETE", str(error))
 
 pubspec = text("pubspec.yaml")
-identity_ok = bool(re.search(r"(?m)^version:\s*1\.3\.0\+8\s*$", pubspec))
+identity_ok = bool(re.search(r"(?m)^version:\s*1\.3\.0\+9\s*$", pubspec))
 record(
-    "Build 8 application identity",
+    "Build 9 application identity",
     "COMPLETE" if identity_ok else "INCOMPLETE",
-    "version: 1.3.0+8" if identity_ok else "Expected version is absent",
+    "version: 1.3.0+9" if identity_ok else "Expected version is absent",
 )
 
 expected_dependencies = {
@@ -115,10 +115,10 @@ record(
 )
 
 artifacts = [
-    "Airmonlink-Business-Manager-1.3.0-Build8-Setup.exe",
-    "Airmonlink-Business-Manager-1.3.0-Build8-Portable.zip",
-    "Airmonlink-Business-Manager-1.3.0-Build8-Full-Source.zip",
-    "Airmonlink-Business-Manager-1.3.0-Build8-SHA256SUMS.txt",
+    "Airmonlink-Business-Manager-1.3.0-Build9-Setup.exe",
+    "Airmonlink-Business-Manager-1.3.0-Build9-Portable.zip",
+    "Airmonlink-Business-Manager-1.3.0-Build9-Full-Source.zip",
+    "Airmonlink-Business-Manager-1.3.0-Build9-SHA256SUMS.txt",
 ]
 missing_artifacts = [name for name in artifacts if name not in workflow]
 record(
@@ -296,7 +296,7 @@ table_names = {
     )
 }
 record(
-    "Build 8 SQLite schema simulation",
+    "Build 9 SQLite schema simulation",
     "COMPLETE" if not schema_errors and len(table_names) >= 50 else "INCOMPLETE",
     f"{len(table_names)} application tables; schema version 8",
     "; ".join(schema_errors[:20]),
@@ -378,7 +378,7 @@ payload = {
     "summary": summary,
     "results": RESULTS,
 }
-(ROOT / "BUILD8-SOURCE-VALIDATION.json").write_text(
+(ROOT / "BUILD9-SOURCE-VALIDATION.json").write_text(
     json.dumps(payload, indent=2) + "\n",
     encoding="utf-8",
 )

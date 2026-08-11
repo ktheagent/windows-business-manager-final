@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $version = '1.3.0'
-$build = '8'
+$build = '9'
 $productPrefix = "Airmonlink-Business-Manager-$version-Build$build"
 
 $releaseDirectory = Get-ChildItem -Path 'build/windows' -Directory -Recurse |

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0+9 — 2026-08-10
+### Workflow corrections
+- Removed automatic first-product selection from new commercial documents and product-line creation.
+- Added explicit POS cash-shift opening with cash-register selection and opening float.
+- Added explicit sale, item, quantity, reason, refund-method and restock selection for returns.
+- Preserved and validated explicit purchase-order, stock-adjustment, physical-count and cash-register workflows.
+- Increased input label and hint contrast for clearer selected values and form context.
+- Kept SQLite schema version 8 and existing user data unchanged.
+
 ## 1.3.0+8 — 2026-07-31
 
 ### Commercial operations

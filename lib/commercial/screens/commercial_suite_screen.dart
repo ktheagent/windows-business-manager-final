@@ -2112,32 +2112,161 @@ class _CashReturnsPanelState extends State<_CashReturnsPanel> {
   }
 
   Future<void> _return(BuildContext context) async {
-    final completed = widget.state.sales;
+    final completed = widget.state.sales
+        .where((sale) => sale.id != null)
+        .toList();
     if (completed.isEmpty) {
       showFailure(context, 'No completed sale is available for return.');
       return;
     }
     try {
-      final sale = completed.first;
+      final saleIndex = await showDialog<int>(
+        context: context,
+        builder: (dialogContext) => SimpleDialog(
+          title: const Text('Select sale to return'),
+          children: [
+            for (var index = 0; index < completed.length; index++)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(dialogContext, index),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(completed[index].invoiceNo),
+                  subtitle: Text(
+                    '${completed[index].paymentMethod} • '
+                    '${AppFormatters.money(completed[index].total)} • '
+                    '${completed[index].createdAt}',
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+      if (saleIndex == null) return;
+      final sale = completed[saleIndex];
+
       final items = await widget.state.commercial.returnableSaleItems(
         actor: widget.user,
         saleId: sale.id!,
       );
-      final item = items.cast<Map<String, Object?>>().firstWhere(
-        (row) => (row['returnable_quantity'] as num).toDouble() > 0,
+      final available = items
+          .cast<Map<String, Object?>>()
+          .where((row) => (row['returnable_quantity'] as num).toDouble() > 0)
+          .toList(growable: false);
+      if (!context.mounted) return;
+      if (available.isEmpty) {
+        showFailure(context, 'This sale has no items remaining to return.');
+        return;
+      }
+
+      final itemIndex = await showDialog<int>(
+        context: context,
+        builder: (dialogContext) => SimpleDialog(
+          title: Text('Select item from ${sale.invoiceNo}'),
+          children: [
+            for (var index = 0; index < available.length; index++)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(dialogContext, index),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    available[index]['product_name'] as String? ??
+                        'Sale item ${available[index]['id']}',
+                  ),
+                  subtitle: Text(
+                    'Returnable quantity: '
+                    '${(available[index]['returnable_quantity'] as num).toDouble().toStringAsFixed(2)}',
+                  ),
+                ),
+              ),
+          ],
+        ),
       );
+      if (itemIndex == null) return;
+      final item = available[itemIndex];
+      final maximum = (item['returnable_quantity'] as num).toDouble();
+
       final quantity = await _askNumber(context, 'Return quantity');
       if (quantity == null) return;
+      if (quantity <= 0 || quantity > maximum) {
+        showFailure(
+          context,
+          'Return quantity must be greater than 0 and no more than '
+          '${maximum.toStringAsFixed(2)}.',
+        );
+        return;
+      }
+
+      final reason = await _askRequiredText(context, 'Return reason');
+      if (reason == null) return;
+      if (!context.mounted) return;
+
+      final refundMethod = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => SimpleDialog(
+          title: const Text('Refund method'),
+          children: [
+            if (widget.state.currentCashSession != null)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(dialogContext, 'Cash'),
+                child: const ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.payments_outlined),
+                  title: Text('Cash'),
+                  subtitle: Text('Refund from the currently open cash shift.'),
+                ),
+              ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, 'Store credit'),
+              child: const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.account_balance_wallet_outlined),
+                title: Text('Store credit'),
+                subtitle: Text('Do not remove cash from the register.'),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (refundMethod == null || !context.mounted) return;
+
+      final restock = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => SimpleDialog(
+          title: const Text('Restock returned item?'),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.inventory_2_outlined),
+                title: Text('Restock item'),
+                subtitle: Text('Add the returned quantity back to inventory.'),
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.block_outlined),
+                title: Text('Do not restock'),
+                subtitle: Text('Use for damaged, expired or unusable goods.'),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (restock == null) return;
+
       await widget.state.commercial.createReturn(
         actor: widget.user,
         saleId: sale.id!,
         quantitiesBySaleItemId: {item['id'] as int: quantity},
-        refundMethod: widget.state.currentCashSession == null
-            ? 'Store credit'
-            : 'Cash',
-        reason: 'Customer return',
-        restock: true,
-        cashSessionId: widget.state.currentCashSession?['id'] as int?,
+        refundMethod: refundMethod,
+        reason: reason,
+        restock: restock,
+        cashSessionId: refundMethod == 'Cash'
+            ? (widget.state.currentCashSession?['id'] as int?)
+            : null,
       );
       await widget.state.refreshAll();
       if (mounted) showSuccess(context, 'Return recorded.');

@@ -7,7 +7,7 @@ $applicationPath = Join-Path $releaseDirectory 'airmonlink_business_manager.exe'
 $installerScript = Join-Path $repositoryRoot 'installer\airmonlink_business_manager.iss'
 $licenseFile = Join-Path $repositoryRoot 'installer\Airmonlink-Business-Manager-EULA.rtf'
 $outputDirectory = Join-Path $repositoryRoot 'dist'
-$productPrefix = 'Airmonlink-Business-Manager-1.3.0-Build8'
+$productPrefix = 'Airmonlink-Business-Manager-1.3.0-Build9'
 $installerPath = Join-Path $outputDirectory "$productPrefix-Setup.exe"
 
 Set-Content -Path $reportPath -Value '' -Encoding utf8
