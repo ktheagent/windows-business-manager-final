@@ -20,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.5'
@@ -31,6 +32,7 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+
           def replace_exact(text: str, old: str, new: str, label: str) -> str:
               count = text.count(old)
               if count != 1:
@@ -80,6 +82,7 @@ jobs:
           )
           hardening_path.write_text(hardening_text, encoding='utf-8')
           compile(hardening_text, str(hardening_path), 'exec')
+
           print('Both Build 9 patch generators compile after deterministic normalization.')
           PY
           python3 -m py_compile tool/apply_build9_final_workflow_fixes.py
@@ -91,11 +94,52 @@ jobs:
       - name: Apply validation hardening
         run: python3 tool/apply_build9_validation_hardening.py
 
+      - name: Remove now-unused Build 9 theme alias
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('lib/core/app_theme.dart')
+          text = path.read_text(encoding='utf-8')
+          declaration = '    const muted = PremiumGlassPalette.muted;\n'
+
+          if text.count(declaration) != 1:
+              raise SystemExit(
+                  f'{path}: expected exactly one muted declaration after Build 9 theme patch, '
+                  f'found {text.count(declaration)}'
+              )
+
+          updated = text.replace(declaration, '', 1)
+          if re.search(r'\bmuted\b', updated):
+              raise SystemExit(
+                  f'{path}: refusing cleanup because a muted reference remains'
+              )
+
+          required = [
+              'color: Color(0xFF4A5568)',
+              'color: primary',
+              'floatingLabelStyle: const TextStyle(',
+          ]
+          missing = [fragment for fragment in required if fragment not in updated]
+          if missing:
+              raise SystemExit(
+                  f'{path}: expected Build 9 contrast fragment(s) missing: {missing!r}'
+              )
+
+          path.write_text(updated, encoding='utf-8')
+          print('Verified Build 9 contrast styles and removed the now-unused muted alias.')
+          PY
+
       - name: Resolve dependencies
         run: flutter pub get --enforce-lockfile
 
       - name: Format changed Dart
         run: dart format lib/commercial/screens/document_editor_dialog.dart lib/screens/pos_screen.dart lib/commercial/screens/commercial_suite_screen.dart lib/commercial/services/commercial_service.dart lib/core/app_theme.dart test/build9_workflow_regression_test.dart
+
+      - name: Check generated diff
+        run: git diff --check
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
@@ -110,30 +154,29 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           find . -type d -name __pycache__ -prune -exec rm -rf {} +
           find . -type f -name '*.pyc' -delete
 
-          git restore -- .github/workflows/windows-build.yml
-          git restore -- .github/workflows/apply-build9-final-workflow-fixes.yml
+          git restore -- .github/workflows
           git restore -- tool/apply_build9_final_workflow_fixes.py
           git restore -- tool/apply_build9_validation_hardening.py
 
           git add -A
-          git reset -- .github/workflows
 
           staged="$(git diff --cached --name-only)"
           printf '%s\n' "$staged"
 
           if printf '%s\n' "$staged" | grep -Eq '(^|/)__pycache__/|\.pyc$|^\.github/workflows/|^tool/apply_build9_'; then
-            echo "Forbidden workflow/helper/bytecode path found in staged changes." >&2
+            echo "Forbidden workflow/helper/bytecode path found in staged Build 9 source." >&2
             exit 1
           fi
 
           if [ -z "$staged" ]; then
-            echo "No validated source changes to commit." >&2
+            echo "No validated Build 9 source changes to commit." >&2
             exit 1
           fi
 
