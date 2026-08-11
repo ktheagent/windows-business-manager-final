@@ -27,7 +27,7 @@ jobs:
           cache: true
 
       - name: Syntax-check patch script
-        run: pythn3 -m py_compile tool/apply_document_number_collision_fix.py
+        run: python3 -m py_compile tool/apply_document_number_collision_fix.py
 
       - name: Apply collision fix
         run: python3 tool/apply_document_number_collision_fix.py
