@@ -7,6 +7,7 @@ on:
     paths:
       - 'tool/apply_build9_final_workflow_fixes.py'
       - 'tool/apply_build9_validation_hardening.py'
+      - 'tool/prepare_build9_pipeline.py'
       - '.github/workflows/apply-build9-final-workflow-fixes.yml'
 
 permissions:
@@ -27,64 +28,10 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Normalize and syntax-check Build 9 patch scripts
-        shell: bash
+      - name: Normalize and syntax-check Build 9 generators
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          def replace_exact(text: str, old: str, new: str, label: str) -> str:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f"{label}: expected exactly one occurrence, found {count}")
-              return text.replace(old, new, 1)
-
-          final_path = Path('tool/apply_build9_final_workflow_fixes.py')
-          final_text = final_path.read_text(encoding='utf-8')
-          final_text = final_text.replace(
-              '    final draft = SaleDraft(\n"",\n',
-              '    final draft = SaleDraft(\n""",\n',
-          )
-          final_text = final_text.replace("    r 'bool(re.search", "    r'bool(re.search")
-          final_text = final_text.replace(
-              r'(?m)^version:\*\1\.3\.0\\+8\s*$',
-              r'(?m)^version:\s*1\.3\.0\+8\s*$',
-          )
-          final_text = final_text.replace(
-              r'(?m)^version:\*\1\.3\.0\\+9\s*$',
-              r'(?m)^version:\s*1\.3\.0\+9\s*$',
-          )
-          final_text = replace_exact(
-              final_text,
-              "        cashSessionId: refundMethod == 'Cash'\n"
-              "            ? widget.state.currentCashSession?['id'] as int?\n"
-              "            : null,\n",
-              "        cashSessionId: refundMethod == 'Cash'\n"
-              "            ? (widget.state.currentCashSession?['id'] as int?)\n"
-              "            : null,\n",
-              'cashSessionId ternary normalization',
-          )
-          final_path.write_text(final_text, encoding='utf-8')
-          compile(final_text, str(final_path), 'exec')
-
-          hardening_path = Path('tool/apply_build9_validation_hardening.py')
-          hardening_text = hardening_path.read_text(encoding='utf-8')
-          hardening_text = replace_exact(
-              hardening_text,
-              '    "      ),",\n'
-              '    "",\n'
-              '    "      await tester.tap(find.text(\'Open editor\'));",\n',
-              '    "      ),",\n'
-              '    "      );",\n'
-              '    "",\n'
-              '    "      await tester.tap(find.text(\'Open editor\'));",\n',
-              'generated pumpWidget closure',
-          )
-          hardening_path.write_text(hardening_text, encoding='utf-8')
-          compile(hardening_text, str(hardening_path), 'exec')
-
-          print('Both Build 9 patch generators compile after deterministic normalization.')
-          PY
+          python3 tool/prepare_build9_pipeline.py normalize
+          python3 -m py_compile tool/prepare_build9_pipeline.py
           python3 -m py_compile tool/apply_build9_final_workflow_fixes.py
           python3 -m py_compile tool/apply_build9_validation_hardening.py
 
@@ -94,43 +41,8 @@ jobs:
       - name: Apply validation hardening
         run: python3 tool/apply_build9_validation_hardening.py
 
-      - name: Remove now-unused Build 9 theme alias
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('lib/core/app_theme.dart')
-          text = path.read_text(encoding='utf-8')
-          declaration = '    const muted = PremiumGlassPalette.muted;\n'
-
-          if text.count(declaration) != 1:
-              raise SystemExit(
-                  f'{path}: expected exactly one muted declaration after Build 9 theme patch, '
-                  f'found {text.count(declaration)}'
-              )
-
-          updated = text.replace(declaration, '', 1)
-          if re.search(r'\bmuted\b', updated):
-              raise SystemExit(
-                  f'{path}: refusing cleanup because a muted reference remains'
-              )
-
-          required = [
-              'color: Color(0xFF4A5568)',
-              'color: primary',
-              'floatingLabelStyle: const TextStyle(',
-          ]
-          missing = [fragment for fragment in required if fragment not in updated]
-          if missing:
-              raise SystemExit(
-                  f'{path}: expected Build 9 contrast fragment(s) missing: {missing!r}'
-              )
-
-          path.write_text(updated, encoding='utf-8')
-          print('Verified Build 9 contrast styles and removed the now-unused muted alias.')
-          PY
+      - name: Remove verified unused Build 9 theme alias
+        run: python3 tool/prepare_build9_pipeline.py cleanup-theme
 
       - name: Resolve dependencies
         run: flutter pub get --enforce-lockfile
@@ -166,16 +78,26 @@ jobs:
           git restore -- tool/apply_build9_validation_hardening.py
 
           git add -A
+          git diff --cached --name-status
 
-          staged="$(git diff --cached --name-only)"
-          printf '%s\n' "$staged"
-
-          if printf '%s\n' "$staged" | grep -Eq '(^|/)__pycache__/|\.pyc$|^\.github/workflows/|^tool/apply_build9_'; then
-            echo "Forbidden workflow/helper/bytecode path found in staged Build 9 source." >&2
+          # Workflow files and temporary Build 9 generator files must never be committed by the bot.
+          if git diff --cached --name-only | grep -Eq '^\.github/workflows/|^tool/apply_build9_'; then
+            echo "Forbidden workflow/helper path found in staged Build 9 source." >&2
             exit 1
           fi
 
-          if [ -z "$staged" ]; then
+          # Bytecode is allowed only as a deletion, to clean historical tracked pollution.
+          while IFS=$'\t' read -r status path rest; do
+            [ -z "${path:-}" ] && continue
+            if [[ "$path" == *"/__pycache__/"* || "$path" == __pycache__/* || "$path" == *.pyc ]]; then
+              if [[ "$status" != D* ]]; then
+                echo "Added or modified Python bytecode is forbidden: $status $path" >&2
+                exit 1
+              fi
+            fi
+          done < <(git diff --cached --name-status)
+
+          if git diff --cached --quiet; then
             echo "No validated Build 9 source changes to commit." >&2
             exit 1
           fi
