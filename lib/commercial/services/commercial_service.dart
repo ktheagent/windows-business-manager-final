@@ -1397,7 +1397,11 @@ class CommercialService {
       final id = await txn.insert('documents', {
         'branch_id': actor.branchId,
         'customer_id': draft.customerId,
-        'document_no': _number(_documentPrefix(draft.type), now),
+        'document_no': await _uniqueDocumentNumber(
+          txn,
+          prefix: _documentPrefix(draft.type),
+          at: now,
+        ),
         'document_type': draft.type,
         'status': 'draft',
         'subtotal': draft.subtotal,
@@ -1547,9 +1551,10 @@ class CommercialService {
       final copyId = await txn.insert('documents', {
         'branch_id': actor.branchId,
         'customer_id': source['customer_id'],
-        'document_no': _number(
-          _documentPrefix(source['document_type'] as String),
-          now,
+        'document_no': await _uniqueDocumentNumber(
+          txn,
+          prefix: _documentPrefix(source['document_type'] as String),
+          at: now,
         ),
         'document_type': source['document_type'],
         'status': 'draft',
@@ -4436,6 +4441,29 @@ class CommercialService {
     'credit_note' => 'CN',
     _ => 'DOC',
   };
+
+  static Future<String> _uniqueDocumentNumber(
+    DatabaseExecutor db, {
+    required String prefix,
+    required DateTime at,
+  }) async {
+    final base = _number(prefix, at);
+    var candidate = base;
+    var attempt = 0;
+    while (true) {
+      final existing =
+          firstIntValue(
+            await db.rawQuery(
+              'SELECT COUNT(*) FROM documents WHERE document_no = ?',
+              [candidate],
+            ),
+          ) ??
+          0;
+      if (existing == 0) return candidate;
+      attempt += 1;
+      candidate = '$base-$attempt';
+    }
+  }
 
   static String _number(String prefix, DateTime dateTime) {
     final stamp = dateTime
