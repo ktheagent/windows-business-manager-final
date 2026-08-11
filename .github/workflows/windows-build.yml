@@ -12,7 +12,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 90
     env:
-      PRODUCT_PREFIX: Airmonlink-Business-Manager-1.3.0-Build8
+      PRODUCT_PREFIX: Airmonlink-Business-Manager-1.3.0-Build9
       FLUTTER_VERSION: '3.44.5'
     steps:
       - uses: actions/checkout@v4
@@ -27,8 +27,8 @@ jobs:
         shell: pwsh
         run: |
           $pubspec = Get-Content pubspec.yaml -Raw
-          if ($pubspec -notmatch '(?m)^version:\s*1\.3\.0\+8\s*$') {
-            throw 'pubspec.yaml must contain version: 1.3.0+8'
+          if ($pubspec -notmatch '(?m)^version:\s*1\.3\.0\+9\s*$') {
+            throw 'pubspec.yaml must contain version: 1.3.0+9'
           }
 
       - name: Clean
@@ -145,6 +145,7 @@ jobs:
       - name: Create full-source package
         shell: pwsh
         run: ./tool/package_source.ps1
+
       - name: Verify artifacts and create checksums
         shell: pwsh
         run: |
@@ -162,11 +163,12 @@ jobs:
             "$hash  $([IO.Path]::GetFileName($file))"
           }
           $lines | Set-Content "dist/$env:PRODUCT_PREFIX-SHA256SUMS.txt" -Encoding ascii
+
       - name: Upload diagnostic reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Airmonlink-Build8-Diagnostics
+          name: Airmonlink-Build9-Diagnostics
           path: |
             analyzer-report.txt
             flutter-test-report.txt
@@ -174,17 +176,18 @@ jobs:
             migration-validation-report.txt
             windows-build-report.txt
             installer-build-report.txt
-            BUILD8-LOCAL-VALIDATION.json
+            BUILD9-LOCAL-VALIDATION.json
           if-no-files-found: warn
           retention-days: 30
-      - name: Upload Build 8 release artifacts
+
+      - name: Upload Build 9 release artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Airmonlink-Business-Manager-1.3.0-Build8-Release
+          name: Airmonlink-Business-Manager-1.3.0-Build9-Release
           path: |
-            dist/Airmonlink-Business-Manager-1.3.0-Build8-Setup.exe
-            dist/Airmonlink-Business-Manager-1.3.0-Build8-Portable.zip
-            dist/Airmonlink-Business-Manager-1.3.0-Build8-Full-Source.zip
-            dist/Airmonlink-Business-Manager-1.3.0-Build8-SHA256SUMS.txt
+            dist/Airmonlink-Business-Manager-1.3.0-Build9-Setup.exe
+            dist/Airmonlink-Business-Manager-1.3.0-Build9-Portable.zip
+            dist/Airmonlink-Business-Manager-1.3.0-Build9-Full-Source.zip
+            dist/Airmonlink-Business-Manager-1.3.0-Build9-SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
