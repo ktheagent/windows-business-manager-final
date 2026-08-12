@@ -64,7 +64,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         margin: EdgeInsets.zero,
-        color: Colors.white.withValues(alpha: 0.92),
+        color: Colors.white.withValues(alpha: 0.94),
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.black.withValues(alpha: 0.10),
         shape: RoundedRectangleBorder(
@@ -78,7 +78,7 @@ class AppTheme {
         elevation: 24,
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        shadowColor: Colors.black.withValues(alpha: 0.20),
+        shadowColor: Colors.black.withValues(alpha: 0.22),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(26),
           side: BorderSide(
@@ -166,7 +166,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primary,
-          backgroundColor: Colors.white.withValues(alpha: 0.78),
+          backgroundColor: Colors.white.withValues(alpha: 0.88),
           padding: const EdgeInsets.symmetric(
             horizontal: 18,
             vertical: 14,
@@ -194,6 +194,7 @@ class AppTheme {
           color: primary,
           fontWeight: FontWeight.w700,
         ),
+      ),
       dataTableTheme: DataTableThemeData(
         headingRowColor: WidgetStatePropertyAll(
           primary.withValues(alpha: 0.10),
@@ -254,9 +255,7 @@ class AppTheme {
         color: primary.withValues(alpha: 0.12),
         thickness: 1,
       ),
-      iconTheme: const IconThemeData(
-        color: primary,
-      ),
+      iconTheme: const IconThemeData(color: primary),
     );
   }
 }
