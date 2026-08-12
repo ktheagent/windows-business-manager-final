@@ -1,0 +1,275 @@
+name: Validate commercial product search v3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-commercial-product-search-v3.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-validate-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch shared commercial document editor
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path("lib/commercial/screens/document_editor_dialog.dart")
+          text = path.read_text(encoding="utf-8")
+
+          # Controller and lifecycle.
+          text = text.replace(
+              "final _barcode = TextEditingController();",
+              "final _productSearch = TextEditingController();",
+              1,
+          )
+          text = text.replace(
+              "_barcode.dispose();",
+              "_productSearch.dispose();",
+              1,
+          )
+
+          # New documents must start empty; existing drafts keep their items.
+          text, n = re.subn(
+              r"\n\s*} else \{\s*\n\s*_addProductLine\(widget\.products\.isEmpty\s*\?\s*null\s*:\s*widget\.products\.first\);\s*\n\s*}",
+              "\n    }",
+              text,
+              count=1,
+          )
+          if n != 1:
+              raise SystemExit("could not remove automatic first-product selection")
+
+          # Replace the entire barcode/SKU-only helper by method boundaries.
+          start_marker = "  void _addBarcodeProduct() {"
+          end_marker = "\n\n  CommercialDocumentDraft _buildDraft()"
+          if start_marker not in text or end_marker not in text:
+              raise SystemExit("commercial search method boundaries not found")
+          start = text.index(start_marker)
+          end = text.index(end_marker, start)
+
+          method = r"""  int _productSearchRank(Product product, String query) {
+            final name = product.name.trim().toLowerCase();
+            final sku = product.sku.trim().toLowerCase();
+            final barcode = product.barcode.trim().toLowerCase();
+            final category = product.category.trim().toLowerCase();
+
+            if (barcode == query || sku == query) return 0;
+            if (name == query) return 1;
+            if (name.startsWith(query)) return 2;
+            if (sku.startsWith(query) || barcode.startsWith(query)) return 3;
+            if (category == query || category.startsWith(query)) return 4;
+            if (name.contains(query)) return 5;
+            if (sku.contains(query) || barcode.contains(query)) return 6;
+            if (category.contains(query)) return 7;
+            return 99;
+          }
+
+          List<Product> _matchingProducts(String query) {
+            final matches = widget.products
+                .where((product) => _productSearchRank(product, query) < 99)
+                .toList();
+            matches.sort((a, b) {
+              final rank = _productSearchRank(a, query)
+                  .compareTo(_productSearchRank(b, query));
+              if (rank != 0) return rank;
+              return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+            });
+            return matches;
+          }
+
+          Future<Product?> _chooseProduct(
+            List<Product> matches,
+            String query,
+          ) async {
+            final visible = matches.take(50).toList(growable: false);
+            return showDialog<Product>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: Text('Select product for "$query"'),
+                content: SizedBox(
+                  width: 640,
+                  height: 460,
+                  child: ListView.separated(
+                    itemCount: visible.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final product = visible[index];
+                      final details = <String>[
+                        if (product.sku.trim().isNotEmpty)
+                          'SKU: ${product.sku.trim()}',
+                        if (product.barcode.trim().isNotEmpty)
+                          'Barcode: ${product.barcode.trim()}',
+                        'Category: ${product.category}',
+                        'Stock: ${product.stockQty}',
+                        'Price: ${AppFormatters.money(product.sellingPrice)}',
+                      ];
+                      return ListTile(
+                        leading: const Icon(Icons.inventory_2_outlined),
+                        title: Text(
+                          product.name,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: Text(details.join(' • ')),
+                        onTap: () => Navigator.of(dialogContext).pop(product),
+                      );
+                    },
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          Future<void> _addSearchedProduct() async {
+            final rawQuery = _productSearch.text.trim();
+            final query = rawQuery.toLowerCase();
+            if (query.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Enter a product name, SKU, barcode, or category first.',
+                  ),
+                ),
+              );
+              return;
+            }
+
+            final matches = _matchingProducts(query);
+            if (matches.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'No product matches that name, SKU, barcode, or category.',
+                  ),
+                ),
+              );
+              return;
+            }
+
+            Product? selected;
+            final exactCodes = matches.where((product) {
+              return product.barcode.trim().toLowerCase() == query ||
+                  product.sku.trim().toLowerCase() == query;
+            }).toList(growable: false);
+
+            if (exactCodes.length == 1) {
+              selected = exactCodes.first;
+            } else if (matches.length == 1) {
+              selected = matches.first;
+            } else {
+              selected = await _chooseProduct(matches, rawQuery);
+            }
+
+            if (!mounted || selected == null) return;
+            _addProductLine(selected);
+            _productSearch.clear();
+          }"""
+
+          text = text[:start] + method + text[end:]
+
+          # Replace quick-add UI.
+          text = text.replace("controller: _barcode,", "controller: _productSearch,", 1)
+          text = text.replace(
+              "labelText: 'Barcode or SKU',",
+              "labelText: 'Search product by name, SKU, barcode, or category',",
+              1,
+          )
+          text = text.replace(
+              "prefixIcon: Icon(Icons.qr_code_scanner),",
+              "prefixIcon: Icon(Icons.search),",
+              1,
+          )
+          text = text.replace(
+              "onSubmitted: (_) => _addBarcodeProduct(),",
+              "onSubmitted: (_) => _addSearchedProduct(),",
+              1,
+          )
+          text = text.replace(
+              "onPressed: _addBarcodeProduct,",
+              "onPressed: _addSearchedProduct,",
+              1,
+          )
+          text = text.replace(
+              "label: const Text('Add'),",
+              "label: const Text('Find & add'),",
+              1,
+          )
+
+          # Product-line button creates an empty selectable line, never first inventory item.
+          text, n = re.subn(
+              r"onPressed:\s*\(\)\s*=>\s*_addProductLine\(\s*widget\.products\.isEmpty\s*\?\s*null\s*:\s*widget\.products\.first,\s*\),",
+              "onPressed: () => _addProductLine(null),",
+              text,
+              count=1,
+          )
+          if n != 1:
+              raise SystemExit("could not update Product line button")
+
+          # Validate transformed source before touching repository.
+          required = [
+              "_productSearch",
+              "_addSearchedProduct",
+              "_matchingProducts",
+              "Search product by name, SKU, barcode, or category",
+              "Find & add",
+          ]
+          for token in required:
+              if token not in text:
+                  raise SystemExit(f"missing transformed token: {token}")
+          forbidden = [
+              "_barcode",
+              "_addBarcodeProduct",
+              "widget.products.first",
+              "labelText: 'Barcode or SKU'",
+          ]
+          for token in forbidden:
+              if token in text:
+                  raise SystemExit(f"old product-search behavior remains: {token}")
+
+          path.write_text(text, encoding="utf-8")
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.5'
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Format changed source
+        run: dart format lib/commercial/screens/document_editor_dialog.dart
+
+      - name: Analyze changed source
+        run: flutter analyze --no-fatal-infos lib/commercial/screens/document_editor_dialog.dart
+
+      - name: Run commercial-related tests
+        shell: bash
+        run: |
+          set -e
+          mapfile -t files < <(find test -type f | grep -E 'commercial|document|invoice|quotation' || true)
+          if [ "${#files[@]}" -gt 0 ]; then
+            flutter test "${files[@]}"
+          else
+            echo "No specifically named commercial tests found; analyzer passed."
+          fi
+
+      - name: Commit validated source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/commercial/screens/document_editor_dialog.dart
+          git commit -m "Add product name search to commercial documents"
+          git push
