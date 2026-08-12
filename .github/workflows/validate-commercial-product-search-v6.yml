@@ -51,3 +51,5 @@ jobs:
           git add lib/commercial/screens/document_editor_dialog.dart
           git commit -m "Add product name search to commercial documents"
           git push
+
+# rerun after resilient patch helper
