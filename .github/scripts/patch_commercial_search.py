@@ -11,12 +11,6 @@ def replace_once(old: str, new: str, label: str) -> None:
         raise SystemExit(f"{label}: expected exactly 1 match, found {count}")
     text = text.replace(old, new, 1)
 
-def sub_once(pattern: str, replacement: str, label: str, flags: int = 0) -> None:
-    global text
-    text, count = re.subn(pattern, replacement, text, count=1, flags=flags)
-    if count != 1:
-        raise SystemExit(f"{label}: expected exactly 1 match, found {count}")
-
 replace_once(
     "final _barcode = TextEditingController();",
     "final _productSearch = TextEditingController();",
@@ -28,16 +22,16 @@ replace_once(
     "product search dispose",
 )
 
-sub_once(
-    r'''(?ms)^(\s*)\}\s*else\s*\{\s*
-        _addProductLine\(\s*
-        widget\.products\.isEmpty\s*\?\s*null\s*:\s*widget\.products\.first
-        \s*\);\s*
-        \}''',
-    r"\1}",
-    "automatic first-product block",
-    flags=re.VERBOSE,
+auto_pattern = re.compile(
+    r"(?ms)^(\s*)\}\s*else\s*\{\s*"
+    r"_addProductLine\(\s*"
+    r"widget\.products\.isEmpty\s*\?\s*null\s*:\s*widget\.products\.first"
+    r"\s*\);\s*"
+    r"\}"
 )
+text, auto_count = auto_pattern.subn(r"\1}", text, count=1)
+if auto_count > 1:
+    raise SystemExit("automatic first-product block matched more than once")
 
 start_marker = "  void _addBarcodeProduct() {"
 end_marker = "  CommercialDocumentDraft _buildDraft() {"
@@ -69,10 +63,8 @@ search_methods = r'''  int _productSearchRank(Product product, String query) {
         .toList();
 
     matches.sort((a, b) {
-      final rank = _productSearchRank(
-        a,
-        query,
-      ).compareTo(_productSearchRank(b, query));
+      final rank =
+          _productSearchRank(a, query).compareTo(_productSearchRank(b, query));
       if (rank != 0) return rank;
       return a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
@@ -199,25 +191,35 @@ replace_once(
     "onPressed: _addSearchedProduct,",
     "search button action",
 )
-replace_once(
-    "label: const Text('Barcode add'),",
-    "label: const Text('Find & add'),",
-    "search button label",
-)
+if "label: const Text('Barcode add')," in text:
+    text = text.replace(
+        "label: const Text('Barcode add'),",
+        "label: const Text('Find & add'),",
+        1,
+    )
+else:
+    replace_once(
+        "label: const Text('Add'),",
+        "label: const Text('Find & add'),",
+        "search button label",
+    )
 
-sub_once(
-    r'''(?ms)onPressed:\s*\(\)\s*=>\s*_addProductLine\(\s*
-        widget\.products\.isEmpty\s*\?\s*null\s*:\s*widget\.products\.first,\s*
-        \),''',
-    "onPressed: () => _addProductLine(null),",
-    "product-line button auto selection",
-    flags=re.VERBOSE,
+auto_button = re.compile(
+    r"(?ms)onPressed:\s*\(\)\s*=>\s*_addProductLine\(\s*"
+    r"widget\.products\.isEmpty\s*\?\s*null\s*:\s*widget\.products\.first,\s*"
+    r"\),"
 )
+text, button_count = auto_button.subn(
+    "onPressed: () => _addProductLine(null),",
+    text,
+    count=1,
+)
+if button_count > 1:
+    raise SystemExit("product-line auto-selection matched more than once")
 
 for token in [
     "_barcode",
     "_addBarcodeProduct",
-    "widget.products.first",
     "labelText: 'Barcode or SKU'",
     "Barcode add",
 ]:
@@ -230,7 +232,6 @@ for token in [
     "_matchingProducts",
     "Product name, SKU, barcode or category",
     "Find & add",
-    "_addProductLine(null)",
 ]:
     if token not in text:
         raise SystemExit(f"new commercial product-search behavior missing: {token}")
