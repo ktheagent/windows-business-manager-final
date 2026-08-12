@@ -25,7 +25,7 @@ class CommercialDocumentEditorDialog extends StatefulWidget {
 class _CommercialDocumentEditorDialogState
     extends State<CommercialDocumentEditorDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _barcode = TextEditingController();
+  final _productSearch = TextEditingController();
   late final TextEditingController _overallDiscount;
   late final TextEditingController _overallTax;
   late final TextEditingController _notes;
@@ -85,7 +85,7 @@ class _CommercialDocumentEditorDialogState
 
   @override
   void dispose() {
-    _barcode.dispose();
+    _productSearch.dispose();
     _overallDiscount.dispose();
     _overallTax.dispose();
     _notes.dispose();
@@ -109,32 +109,128 @@ class _CommercialDocumentEditorDialogState
     });
   }
 
-  void _addBarcodeProduct() {
-    final query = _barcode.text.trim().toLowerCase();
+  int _productSearchRank(Product product, String query) {
+    final name = product.name.trim().toLowerCase();
+    final sku = product.sku.trim().toLowerCase();
+    final barcode = product.barcode.trim().toLowerCase();
+    final category = product.category.trim().toLowerCase();
+
+    if (barcode == query || sku == query) return 0;
+    if (name == query) return 1;
+    if (name.startsWith(query)) return 2;
+    if (sku.startsWith(query) || barcode.startsWith(query)) return 3;
+    if (category == query || category.startsWith(query)) return 4;
+    if (name.contains(query)) return 5;
+    if (sku.contains(query) || barcode.contains(query)) return 6;
+    if (category.contains(query)) return 7;
+    return 99;
+  }
+
+  List<Product> _matchingProducts(String query) {
+    final matches = widget.products
+        .where((product) => _productSearchRank(product, query) < 99)
+        .toList();
+
+    matches.sort((a, b) {
+      final rank = _productSearchRank(
+        a,
+        query,
+      ).compareTo(_productSearchRank(b, query));
+      if (rank != 0) return rank;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return matches;
+  }
+
+  Future<Product?> _chooseProduct(List<Product> matches, String query) async {
+    final visible = matches.take(50).toList(growable: false);
+    return showDialog<Product>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Select product for "$query"'),
+        content: SizedBox(
+          width: 640,
+          height: 460,
+          child: ListView.separated(
+            itemCount: visible.length,
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final product = visible[index];
+              final details = <String>[
+                if (product.sku.trim().isNotEmpty) 'SKU: ${product.sku.trim()}',
+                if (product.barcode.trim().isNotEmpty)
+                  'Barcode: ${product.barcode.trim()}',
+                'Category: ${product.category}',
+                'Stock: ${product.stockQty}',
+                'Price: ${AppFormatters.money(product.sellingPrice)}',
+              ];
+              return ListTile(
+                leading: const Icon(Icons.inventory_2_outlined),
+                title: Text(
+                  product.name,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text(details.join(' • ')),
+                onTap: () => Navigator.of(dialogContext).pop(product),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addSearchedProduct() async {
+    final rawQuery = _productSearch.text.trim();
+    final query = rawQuery.toLowerCase();
     if (query.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Scan or enter a barcode or SKU first.')),
-      );
-      return;
-    }
-    Product? match;
-    for (final product in widget.products) {
-      if (product.barcode.trim().toLowerCase() == query ||
-          product.sku.trim().toLowerCase() == query) {
-        match = product;
-        break;
-      }
-    }
-    if (match == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No product matches that barcode or SKU.'),
+          content: Text(
+            'Enter a product name, SKU, barcode, or category first.',
+          ),
         ),
       );
       return;
     }
-    _addProductLine(match);
-    _barcode.clear();
+
+    final matches = _matchingProducts(query);
+    if (matches.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No product matches that name, SKU, barcode, or category.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    Product? selected;
+    final exactCodes = matches
+        .where((product) {
+          return product.barcode.trim().toLowerCase() == query ||
+              product.sku.trim().toLowerCase() == query;
+        })
+        .toList(growable: false);
+
+    if (exactCodes.length == 1) {
+      selected = exactCodes.first;
+    } else if (matches.length == 1) {
+      selected = matches.first;
+    } else {
+      selected = await _chooseProduct(matches, rawQuery);
+    }
+
+    if (!mounted || selected == null) return;
+    _addProductLine(selected);
+    _productSearch.clear();
   }
 
   CommercialDocumentDraft _buildDraft() {
@@ -269,19 +365,19 @@ class _CommercialDocumentEditorDialogState
                   SizedBox(
                     width: 260,
                     child: TextField(
-                      controller: _barcode,
+                      controller: _productSearch,
                       decoration: const InputDecoration(
-                        labelText: 'Barcode or SKU',
-                        prefixIcon: Icon(Icons.qr_code_scanner),
+                        labelText: 'Product name, SKU, barcode or category',
+                        prefixIcon: Icon(Icons.search),
                       ),
-                      onSubmitted: (_) => _addBarcodeProduct(),
+                      onSubmitted: (_) => _addSearchedProduct(),
                     ),
                   ),
                   const SizedBox(width: 8),
                   FilledButton.icon(
-                    onPressed: _addBarcodeProduct,
+                    onPressed: _addSearchedProduct,
                     icon: const Icon(Icons.add),
-                    label: const Text('Add'),
+                    label: const Text('Find & add'),
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
