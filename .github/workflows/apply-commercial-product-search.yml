@@ -19,26 +19,52 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          import re
 
           path = Path("lib/commercial/screens/document_editor_dialog.dart")
           text = path.read_text(encoding="utf-8")
-          original = text
 
-          text = text.replace(
-              "final _barcode = TextEditingController();",
-              "final _productSearch = TextEditingController();",
-          )
-          text = text.replace("_barcode.dispose();", "_productSearch.dispose();")
+          old = "final _barcode = TextEditingController();"
+          new = "final _productSearch = TextEditingController();"
+          if old not in text:
+              raise SystemExit("Search controller pattern not found")
+          text = text.replace(old, new, 1)
 
-          text = re.sub(
-              r"\n    \} else \{\n      _addProductLine\(widget\.products\.isEmpty \? null : widget\.products\.first\);\n    \}",
-              "\n    }",
-              text,
-              count=1,
-          )
+          old = """    } else {
+              _addProductLine(widget.products.isEmpty ? null : widget.products.first);
+            }"""
+          if old not in text:
+              raise SystemExit("Initial auto-product pattern not found")
+          text = text.replace(old, "    }", 1)
 
-          replacement = r"""  int _productSearchRank(Product product, String query) {
+          old = "_barcode.dispose();"
+          if old not in text:
+              raise SystemExit("Dispose pattern not found")
+          text = text.replace(old, "_productSearch.dispose();", 1)
+
+          old_method = """  void _addBarcodeProduct() {
+            final query = _barcode.text.trim().toLowerCase();
+            if (query.isEmpty) return;
+            Product? match;
+            for (final product in widget.products) {
+              if (product.barcode.trim().toLowerCase() == query ||
+                  product.sku.trim().toLowerCase() == query) {
+                match = product;
+                break;
+              }
+            }
+            if (match == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('No active product matches that barcode.'),
+                ),
+              );
+              return;
+            }
+            _addProductLine(match);
+            _barcode.clear();
+          }"""
+
+          new_method = """  int _productSearchRank(Product product, String query) {
             final name = product.name.trim().toLowerCase();
             final sku = product.sku.trim().toLowerCase();
             final barcode = product.barcode.trim().toLowerCase();
@@ -59,11 +85,11 @@ jobs:
             final matches = widget.products
                 .where((product) => _productSearchRank(product, query) < 99)
                 .toList();
-
             matches.sort((a, b) {
-              final byRank = _productSearchRank(a, query)
-                  .compareTo(_productSearchRank(b, query));
-              if (byRank != 0) return byRank;
+              final rank = _productSearchRank(a, query).compareTo(
+                _productSearchRank(b, query),
+              );
+              if (rank != 0) return rank;
               return a.name.toLowerCase().compareTo(b.name.toLowerCase());
             });
             return matches;
@@ -102,8 +128,7 @@ jobs:
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         subtitle: Text(details.join(' • ')),
-                        onTap: () =>
-                            Navigator.of(dialogContext).pop(product),
+                        onTap: () => Navigator.of(dialogContext).pop(product),
                       );
                     },
                   ),
@@ -119,7 +144,8 @@ jobs:
           }
 
           Future<void> _addSearchedProduct() async {
-            final query = _productSearch.text.trim().toLowerCase();
+            final rawQuery = _productSearch.text.trim();
+            final query = rawQuery.toLowerCase();
             if (query.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -154,65 +180,39 @@ jobs:
             } else if (matches.length == 1) {
               selected = matches.first;
             } else {
-              selected = await _chooseProduct(
-                matches,
-                _productSearch.text.trim(),
-              );
+              selected = await _chooseProduct(matches, rawQuery);
             }
 
             if (!mounted || selected == null) return;
             _addProductLine(selected);
             _productSearch.clear();
-          }
-          """
+          }"""
 
-          pattern = re.compile(
-              r"  void _addBarcodeProduct\(\) \{.*?\n  \}\n(?=  CommercialDocumentDraft _buildDraft\(\))",
-              re.S,
-          )
-          text, count = pattern.subn(replacement, text, count=1)
-          if count != 1:
-              raise SystemExit("Could not replace _addBarcodeProduct")
+          if old_method not in text:
+              raise SystemExit("Old barcode method pattern not found")
+          text = text.replace(old_method, new_method, 1)
 
-          text = text.replace("controller: _barcode,", "controller: _productSearch,")
-          text = text.replace(
-              "labelText: 'Barcode or SKU',",
-              "labelText: 'Search product by name, SKU, barcode, or category',",
-          )
-          text = text.replace(
-              "prefixIcon: Icon(Icons.qr_code_scanner),",
-              "prefixIcon: Icon(Icons.search),",
-          )
-          text = text.replace(
-              "onSubmitted: (_) => _addBarcodeProduct(),",
-              "onSubmitted: (_) => _addSearchedProduct(),",
-          )
-          text = text.replace(
-              "onPressed: _addBarcodeProduct,",
-              "onPressed: _addSearchedProduct,",
-          )
-          text = text.replace(
-              "label: const Text('Barcode add'),",
-              "label: const Text('Find & add'),",
-          )
+          replacements = [
+            ("controller: _barcode,", "controller: _productSearch,"),
+            ("labelText: 'Barcode or SKU',", "labelText: 'Search product by name, SKU, barcode, or category',"),
+            ("prefixIcon: Icon(Icons.qr_code_scanner),", "prefixIcon: Icon(Icons.search),"),
+            ("onSubmitted: (_) => _addBarcodeProduct(),", "onSubmitted: (_) => _addSearchedProduct(),"),
+            ("onPressed: _addBarcodeProduct,", "onPressed: _addSearchedProduct,"),
+            ("label: const Text('Barcode add'),", "label: const Text('Find & add'),"),
+            ("""onPressed: () => _addProductLine(
+                      widget.products.isEmpty ? null : widget.products.first,
+                    ),""", "onPressed: () => _addProductLine(null),"),
+          ]
 
-          text, button_count = re.subn(
-              r"onPressed: \(\) => _addProductLine\(\n\s*widget\.products\.isEmpty \? null : widget\.products\.first,\n\s*\),",
-              "onPressed: () => _addProductLine(null),",
-              text,
-              count=1,
-          )
-          if button_count != 1:
-              raise SystemExit("Could not replace Product line auto-selection")
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f"UI pattern not found: {old}")
+              text = text.replace(old, new, 1)
 
-          if text == original:
-              raise SystemExit("Patch made no changes")
-          if "_addBarcodeProduct" in text or "controller: _barcode" in text:
-              raise SystemExit("Old barcode-only search remains")
+          if "_barcode" in text:
+              raise SystemExit("Old barcode-only controller remains")
           if "widget.products.first" in text:
               raise SystemExit("Automatic first-product selection remains")
-          if "_addSearchedProduct" not in text:
-              raise SystemExit("New search was not installed")
 
           path.write_text(text, encoding="utf-8")
 
