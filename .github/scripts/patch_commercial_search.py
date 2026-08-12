@@ -1,53 +1,52 @@
 from pathlib import Path
+import re
 
 path = Path("lib/commercial/screens/document_editor_dialog.dart")
-lines = path.read_text(encoding="utf-8").splitlines()
+text = path.read_text(encoding="utf-8")
 
-for i, line in enumerate(lines):
-    if "final _barcode = TextEditingController();" in line:
-        lines[i] = line.replace("_barcode", "_productSearch")
-        break
-else:
-    raise SystemExit("barcode controller not found")
+def replace_once(old: str, new: str, label: str) -> None:
+    global text
+    count = text.count(old)
+    if count != 1:
+        raise SystemExit(f"{label}: expected exactly 1 match, found {count}")
+    text = text.replace(old, new, 1)
 
-i = 0
-removed = False
-while i < len(lines) - 2:
-    if (
-        lines[i].strip() == "} else {"
-        and "_addProductLine(widget.products.isEmpty ? null : widget.products.first);" in lines[i + 1]
-        and lines[i + 2].strip() == "}"
-    ):
-        indent = lines[i][: len(lines[i]) - len(lines[i].lstrip())]
-        lines[i:i + 3] = [indent + "}"]
-        removed = True
-        break
-    i += 1
-if not removed:
-    raise SystemExit("automatic first-product block not found")
+def sub_once(pattern: str, replacement: str, label: str, flags: int = 0) -> None:
+    global text
+    text, count = re.subn(pattern, replacement, text, count=1, flags=flags)
+    if count != 1:
+        raise SystemExit(f"{label}: expected exactly 1 match, found {count}")
 
-for i, line in enumerate(lines):
-    if "_barcode.dispose();" in line:
-        lines[i] = line.replace("_barcode", "_productSearch")
-        break
-else:
-    raise SystemExit("barcode dispose not found")
-
-start = next((i for i, line in enumerate(lines) if line.strip() == "void _addBarcodeProduct() {"), None)
-end = next(
-    (
-        i
-        for i, line in enumerate(lines)
-        if start is not None
-        and i > start
-        and line.strip().startswith("CommercialDocumentDraft _buildDraft()")
-    ),
-    None,
+replace_once(
+    "final _barcode = TextEditingController();",
+    "final _productSearch = TextEditingController();",
+    "product search controller",
 )
-if start is None or end is None:
-    raise SystemExit("search helper boundaries not found")
+replace_once(
+    "_barcode.dispose();",
+    "_productSearch.dispose();",
+    "product search dispose",
+)
 
-method = r'''  int _productSearchRank(Product product, String query) {
+sub_once(
+    r'''(?ms)^(\s*)\}\s*else\s*\{\s*
+        _addProductLine\(\s*
+        widget\.products\.isEmpty\s*\?\s*null\s*:\s*widget\.products\.first
+        \s*\);\s*
+        \}''',
+    r"\1}",
+    "automatic first-product block",
+    flags=re.VERBOSE,
+)
+
+start_marker = "  void _addBarcodeProduct() {"
+end_marker = "  CommercialDocumentDraft _buildDraft() {"
+start = text.find(start_marker)
+end = text.find(end_marker, start)
+if start == -1 or end == -1:
+    raise SystemExit("commercial product search method boundaries not found")
+
+search_methods = r'''  int _productSearchRank(Product product, String query) {
     final name = product.name.trim().toLowerCase();
     final sku = product.sku.trim().toLowerCase();
     final barcode = product.barcode.trim().toLowerCase();
@@ -68,9 +67,12 @@ method = r'''  int _productSearchRank(Product product, String query) {
     final matches = widget.products
         .where((product) => _productSearchRank(product, query) < 99)
         .toList();
+
     matches.sort((a, b) {
-      final rank = _productSearchRank(a, query)
-          .compareTo(_productSearchRank(b, query));
+      final rank = _productSearchRank(
+        a,
+        query,
+      ).compareTo(_productSearchRank(b, query));
       if (rank != 0) return rank;
       return a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
@@ -168,51 +170,49 @@ method = r'''  int _productSearchRank(Product product, String query) {
     _addProductLine(selected);
     _productSearch.clear();
   }
-'''.splitlines()
 
-lines[start:end] = method
+'''
+text = text[:start] + search_methods + text[end:]
 
-replacement_pairs = {
-    "controller: _barcode,": "controller: _productSearch,",
-    "labelText: 'Barcode or SKU',":
-        "labelText: 'Search product by name, SKU, barcode, or category',",
-    "prefixIcon: Icon(Icons.qr_code_scanner),":
-        "prefixIcon: Icon(Icons.search),",
-    "onSubmitted: (_) => _addBarcodeProduct(),":
-        "onSubmitted: (_) => _addSearchedProduct(),",
-    "onPressed: _addBarcodeProduct,":
-        "onPressed: _addSearchedProduct,",
-    "label: const Text('Barcode add'),":
-        "label: const Text('Find & add'),",
-}
-found = {k: False for k in replacement_pairs}
-for i, line in enumerate(lines):
-    for old, new in replacement_pairs.items():
-        if old in line:
-            lines[i] = line.replace(old, new)
-            found[old] = True
+replace_once(
+    "controller: _barcode,",
+    "controller: _productSearch,",
+    "search field controller",
+)
+replace_once(
+    "labelText: 'Barcode or SKU',",
+    "labelText: 'Product name, SKU, barcode or category',",
+    "search field label",
+)
+replace_once(
+    "prefixIcon: Icon(Icons.qr_code_scanner),",
+    "prefixIcon: Icon(Icons.search),",
+    "search field icon",
+)
+replace_once(
+    "onSubmitted: (_) => _addBarcodeProduct(),",
+    "onSubmitted: (_) => _addSearchedProduct(),",
+    "search submit",
+)
+replace_once(
+    "onPressed: _addBarcodeProduct,",
+    "onPressed: _addSearchedProduct,",
+    "search button action",
+)
+replace_once(
+    "label: const Text('Barcode add'),",
+    "label: const Text('Find & add'),",
+    "search button label",
+)
 
-missing = [old for old, yes in found.items() if not yes]
-if missing:
-    raise SystemExit(f"quick-add UI patterns missing: {missing}")
-
-changed_product_button = False
-i = 0
-while i < len(lines) - 2:
-    if (
-        "onPressed: () => _addProductLine(" in lines[i]
-        and "widget.products.isEmpty ? null : widget.products.first," in lines[i + 1]
-        and lines[i + 2].strip() == "),"
-    ):
-        indent = lines[i][: len(lines[i]) - len(lines[i].lstrip())]
-        lines[i:i + 3] = [indent + "onPressed: () => _addProductLine(null),"]
-        changed_product_button = True
-        break
-    i += 1
-if not changed_product_button:
-    raise SystemExit("Product line auto-selection block not found")
-
-text = "\n".join(lines) + "\n"
+sub_once(
+    r'''(?ms)onPressed:\s*\(\)\s*=>\s*_addProductLine\(\s*
+        widget\.products\.isEmpty\s*\?\s*null\s*:\s*widget\.products\.first,\s*
+        \),''',
+    "onPressed: () => _addProductLine(null),",
+    "product-line button auto selection",
+    flags=re.VERBOSE,
+)
 
 for token in [
     "_barcode",
@@ -222,17 +222,17 @@ for token in [
     "Barcode add",
 ]:
     if token in text:
-        raise SystemExit(f"old product-search behavior remains: {token}")
+        raise SystemExit(f"old commercial product-search behavior remains: {token}")
 
 for token in [
     "_productSearch",
     "_addSearchedProduct",
     "_matchingProducts",
-    "Search product by name, SKU, barcode, or category",
+    "Product name, SKU, barcode or category",
     "Find & add",
     "_addProductLine(null)",
 ]:
     if token not in text:
-        raise SystemExit(f"new product-search behavior missing: {token}")
+        raise SystemExit(f"new commercial product-search behavior missing: {token}")
 
 path.write_text(text, encoding="utf-8")
