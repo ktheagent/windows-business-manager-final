@@ -24,6 +24,19 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Use system SQLite for CI validation
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsqlite3-dev
+          cat >> pubspec.yaml <<'EOF'
+
+          hooks:
+            user_defines:
+              sqlite3:
+                source: system
+          EOF
+
       - name: Get dependencies
         run: flutter pub get
 
@@ -44,6 +57,11 @@ jobs:
             echo "No specifically named commercial tests found; analyzer passed."
           fi
 
+      - name: Restore CI-only dependency configuration
+        shell: bash
+        run: |
+          git checkout -- pubspec.yaml pubspec.lock 2>/dev/null || git checkout -- pubspec.yaml
+
       - name: Commit validated source
         run: |
           git config user.name "github-actions[bot]"
@@ -52,6 +70,4 @@ jobs:
           git commit -m "Add product name search to commercial documents"
           git push
 
-# rerun after resilient patch helper
-
-# rerun after idempotent helper
+# rerun with idempotent helper and system SQLite validation
