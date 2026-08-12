@@ -1,0 +1,237 @@
+name: Apply commercial product search fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-commercial-product-search.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch commercial document product search
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path("lib/commercial/screens/document_editor_dialog.dart")
+          text = path.read_text(encoding="utf-8")
+          original = text
+
+          text = text.replace(
+              "final _barcode = TextEditingController();",
+              "final _productSearch = TextEditingController();",
+          )
+          text = text.replace("_barcode.dispose();", "_productSearch.dispose();")
+
+          text = re.sub(
+              r"\n    \} else \{\n      _addProductLine\(widget\.products\.isEmpty \? null : widget\.products\.first\);\n    \}",
+              "\n    }",
+              text,
+              count=1,
+          )
+
+          replacement = r"""  int _productSearchRank(Product product, String query) {
+            final name = product.name.trim().toLowerCase();
+            final sku = product.sku.trim().toLowerCase();
+            final barcode = product.barcode.trim().toLowerCase();
+            final category = product.category.trim().toLowerCase();
+
+            if (barcode == query || sku == query) return 0;
+            if (name == query) return 1;
+            if (name.startsWith(query)) return 2;
+            if (sku.startsWith(query) || barcode.startsWith(query)) return 3;
+            if (category == query || category.startsWith(query)) return 4;
+            if (name.contains(query)) return 5;
+            if (sku.contains(query) || barcode.contains(query)) return 6;
+            if (category.contains(query)) return 7;
+            return 99;
+          }
+
+          List<Product> _matchingProducts(String query) {
+            final matches = widget.products
+                .where((product) => _productSearchRank(product, query) < 99)
+                .toList();
+
+            matches.sort((a, b) {
+              final byRank = _productSearchRank(a, query)
+                  .compareTo(_productSearchRank(b, query));
+              if (byRank != 0) return byRank;
+              return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+            });
+            return matches;
+          }
+
+          Future<Product?> _chooseProduct(
+            List<Product> matches,
+            String query,
+          ) async {
+            final visible = matches.take(50).toList(growable: false);
+            return showDialog<Product>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: Text('Select product for "$query"'),
+                content: SizedBox(
+                  width: 640,
+                  height: 460,
+                  child: ListView.separated(
+                    itemCount: visible.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final product = visible[index];
+                      final details = <String>[
+                        if (product.sku.trim().isNotEmpty)
+                          'SKU: ${product.sku.trim()}',
+                        if (product.barcode.trim().isNotEmpty)
+                          'Barcode: ${product.barcode.trim()}',
+                        'Category: ${product.category}',
+                        'Stock: ${product.stockQty}',
+                        'Price: ${AppFormatters.money(product.sellingPrice)}',
+                      ];
+                      return ListTile(
+                        leading: const Icon(Icons.inventory_2_outlined),
+                        title: Text(
+                          product.name,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: Text(details.join(' • ')),
+                        onTap: () =>
+                            Navigator.of(dialogContext).pop(product),
+                      );
+                    },
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          Future<void> _addSearchedProduct() async {
+            final query = _productSearch.text.trim().toLowerCase();
+            if (query.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Enter a product name, SKU, barcode, or category first.',
+                  ),
+                ),
+              );
+              return;
+            }
+
+            final matches = _matchingProducts(query);
+            if (matches.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'No product matches that name, SKU, barcode, or category.',
+                  ),
+                ),
+              );
+              return;
+            }
+
+            Product? selected;
+            final exactCodes = matches.where((product) {
+              return product.barcode.trim().toLowerCase() == query ||
+                  product.sku.trim().toLowerCase() == query;
+            }).toList(growable: false);
+
+            if (exactCodes.length == 1) {
+              selected = exactCodes.first;
+            } else if (matches.length == 1) {
+              selected = matches.first;
+            } else {
+              selected = await _chooseProduct(
+                matches,
+                _productSearch.text.trim(),
+              );
+            }
+
+            if (!mounted || selected == null) return;
+            _addProductLine(selected);
+            _productSearch.clear();
+          }
+          """
+
+          pattern = re.compile(
+              r"  void _addBarcodeProduct\(\) \{.*?\n  \}\n(?=  CommercialDocumentDraft _buildDraft\(\))",
+              re.S,
+          )
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit("Could not replace _addBarcodeProduct")
+
+          text = text.replace("controller: _barcode,", "controller: _productSearch,")
+          text = text.replace(
+              "labelText: 'Barcode or SKU',",
+              "labelText: 'Search product by name, SKU, barcode, or category',",
+          )
+          text = text.replace(
+              "prefixIcon: Icon(Icons.qr_code_scanner),",
+              "prefixIcon: Icon(Icons.search),",
+          )
+          text = text.replace(
+              "onSubmitted: (_) => _addBarcodeProduct(),",
+              "onSubmitted: (_) => _addSearchedProduct(),",
+          )
+          text = text.replace(
+              "onPressed: _addBarcodeProduct,",
+              "onPressed: _addSearchedProduct,",
+          )
+          text = text.replace(
+              "label: const Text('Barcode add'),",
+              "label: const Text('Find & add'),",
+          )
+
+          text, button_count = re.subn(
+              r"onPressed: \(\) => _addProductLine\(\n\s*widget\.products\.isEmpty \? null : widget\.products\.first,\n\s*\),",
+              "onPressed: () => _addProductLine(null),",
+              text,
+              count=1,
+          )
+          if button_count != 1:
+              raise SystemExit("Could not replace Product line auto-selection")
+
+          if text == original:
+              raise SystemExit("Patch made no changes")
+          if "_addBarcodeProduct" in text or "controller: _barcode" in text:
+              raise SystemExit("Old barcode-only search remains")
+          if "widget.products.first" in text:
+              raise SystemExit("Automatic first-product selection remains")
+          if "_addSearchedProduct" not in text:
+              raise SystemExit("New search was not installed")
+
+          path.write_text(text, encoding="utf-8")
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.5'
+          channel: stable
+          cache: true
+
+      - name: Format changed source
+        run: dart format lib/commercial/screens/document_editor_dialog.dart
+
+      - name: Analyze changed source
+        run: flutter analyze --no-fatal-infos lib/commercial/screens/document_editor_dialog.dart
+
+      - name: Commit validated fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/commercial/screens/document_editor_dialog.dart
+          git commit -m "Add product name search to commercial documents"
+          git push
