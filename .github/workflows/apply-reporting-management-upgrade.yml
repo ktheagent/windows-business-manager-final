@@ -15,10 +15,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply reporting upgrade
+      - name: Patch Reports panel
         run: |
           python .github/scripts/patch_reporting_upgrade.py
+          grep -q "Staff performance" lib/commercial/screens/commercial_suite_screen.dart
+          grep -q "DropdownButtonFormField<int>" lib/commercial/screens/commercial_suite_screen.dart
+
+      - name: Patch report permissions
+        run: |
           python .github/scripts/patch_report_permissions.py
+          grep -q "profit-sensitive reports" lib/commercial/services/advanced_report_service.dart
 
       - uses: subosito/flutter-action@v2
         with:
@@ -72,7 +78,6 @@ jobs:
         shell: bash
         run: |
           grep -q "Staff performance" lib/commercial/screens/commercial_suite_screen.dart
-          grep -q "DropdownButtonFormField<int>" lib/commercial/screens/commercial_suite_screen.dart
           grep -q "reportsExport" lib/commercial/screens/commercial_suite_screen.dart
           grep -q "profit-sensitive reports" lib/commercial/services/advanced_report_service.dart
           git diff --check
