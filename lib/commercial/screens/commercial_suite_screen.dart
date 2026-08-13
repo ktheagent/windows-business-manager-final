@@ -733,6 +733,7 @@ class _ReportsPanelState extends State<_ReportsPanel> {
   CommercialReportKind kind = CommercialReportKind.revenue;
   String period = 'this_month';
   bool consolidated = false;
+  int? selectedBranchId;
   late Future<CommercialReportResult> future;
 
   static const periods = <String, String>{
@@ -750,6 +751,7 @@ class _ReportsPanelState extends State<_ReportsPanel> {
   @override
   void initState() {
     super.initState();
+    selectedBranchId = widget.user.branchId;
     future = _load();
   }
 
@@ -757,7 +759,7 @@ class _ReportsPanelState extends State<_ReportsPanel> {
     final base = CommercialReportFilter.period(period);
     return base.copyWith(
       consolidated: consolidated,
-      branchId: consolidated ? null : widget.user.branchId,
+      branchId: consolidated ? null : selectedBranchId ?? widget.user.branchId,
     );
   }
 
@@ -775,9 +777,27 @@ class _ReportsPanelState extends State<_ReportsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final mayConsolidate =
+    final mayChooseBranch =
         widget.user.role == StaffRole.owner ||
         widget.user.role == StaffRole.manager;
+    final mayConsolidate = widget.user.role == StaffRole.owner;
+    final canSeeProfit = widget.user.can(CommercialPermission.reportsProfit);
+    final canExport = widget.user.can(CommercialPermission.reportsExport);
+    final profitKinds = <CommercialReportKind>{
+      CommercialReportKind.grossProfit,
+      CommercialReportKind.netProfit,
+      CommercialReportKind.costOfGoodsSold,
+      CommercialReportKind.profitByProduct,
+      CommercialReportKind.profitByCategory,
+      CommercialReportKind.profitByUser,
+      CommercialReportKind.profitByBranch,
+    };
+    final visibleKinds = CommercialReportKind.values
+        .where((item) => canSeeProfit || !profitKinds.contains(item))
+        .toList(growable: false);
+    final activeBranches = widget.state.branches
+        .where((branch) => branch.isActive)
+        .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -792,7 +812,7 @@ class _ReportsPanelState extends State<_ReportsPanel> {
                 initialValue: kind,
                 decoration: const InputDecoration(labelText: 'Report'),
                 items: [
-                  for (final item in CommercialReportKind.values)
+                  for (final item in visibleKinds)
                     DropdownMenuItem(value: item, child: Text(item.label)),
                 ],
                 onChanged: (value) {
@@ -821,6 +841,31 @@ class _ReportsPanelState extends State<_ReportsPanel> {
                 },
               ),
             ),
+            SizedBox(
+              width: 220,
+              child: DropdownButtonFormField<int>(
+                initialValue: selectedBranchId,
+                decoration: InputDecoration(
+                  labelText: mayChooseBranch ? 'Branch' : 'Your branch',
+                  prefixIcon: const Icon(Icons.store_outlined),
+                ),
+                items: [
+                  for (final branch in activeBranches)
+                    DropdownMenuItem(
+                      value: branch.id,
+                      child: Text(branch.name, overflow: TextOverflow.ellipsis),
+                    ),
+                ],
+                onChanged: mayChooseBranch
+                    ? (value) {
+                        if (value == null) return;
+                        selectedBranchId = value;
+                        consolidated = false;
+                        reload();
+                      }
+                    : null,
+              ),
+            ),
             if (mayConsolidate)
               FilterChip(
                 label: const Text('All branches'),
@@ -830,26 +875,38 @@ class _ReportsPanelState extends State<_ReportsPanel> {
                   reload();
                 },
               ),
+            if (mayChooseBranch)
+              OutlinedButton.icon(
+                onPressed: _showStaffPerformance,
+                icon: const Icon(Icons.groups_2_outlined),
+                label: const Text('Staff performance'),
+              ),
             FilledButton.icon(
               onPressed: reload,
               icon: const Icon(Icons.refresh),
               label: const Text('Refresh'),
             ),
-            OutlinedButton.icon(
-              onPressed: _exportCsv,
-              icon: const Icon(Icons.table_view_outlined),
-              label: const Text('CSV'),
-            ),
-            OutlinedButton.icon(
-              onPressed: _exportXlsx,
-              icon: const Icon(Icons.grid_on_outlined),
-              label: const Text('XLSX'),
-            ),
-            OutlinedButton.icon(
-              onPressed: _previewPdf,
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              label: const Text('PDF / print'),
-            ),
+            if (canExport) ...[
+              OutlinedButton.icon(
+                onPressed: _exportCsv,
+                icon: const Icon(Icons.table_view_outlined),
+                label: const Text('CSV'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _exportXlsx,
+                icon: const Icon(Icons.grid_on_outlined),
+                label: const Text('XLSX'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _previewPdf,
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: const Text('PDF / print'),
+              ),
+            ] else
+              const Chip(
+                avatar: Icon(Icons.lock_outline, size: 18),
+                label: Text('Export permission required'),
+              ),
           ],
         ),
         const SizedBox(height: 12),
@@ -933,7 +990,237 @@ class _ReportsPanelState extends State<_ReportsPanel> {
     );
   }
 
+  Future<void> _showStaffPerformance() async {
+    if (period == 'all') {
+      showFailure(
+        context,
+        'Choose a specific period before comparing staff performance.',
+      );
+      return;
+    }
+    try {
+      final current = await widget.state.advancedReports.run(
+        actor: widget.user,
+        kind: CommercialReportKind.salesByUser,
+        filter: filter,
+      );
+      final previous = await widget.state.advancedReports.run(
+        actor: widget.user,
+        kind: CommercialReportKind.salesByUser,
+        filter: _previousStaffFilter(),
+      );
+      final profit = widget.user.can(CommercialPermission.reportsProfit)
+          ? await widget.state.advancedReports.run(
+              actor: widget.user,
+              kind: CommercialReportKind.profitByUser,
+              filter: filter,
+            )
+          : null;
+      if (!mounted) return;
+
+      final previousByName = <String, double>{
+        for (final row in previous.rows)
+          '${row['user'] ?? 'Unknown user'}': (row['revenue'] as num? ?? 0)
+              .toDouble(),
+      };
+      final profitByName = <String, double>{
+        if (profit != null)
+          for (final row in profit.rows)
+            '${row['user'] ?? 'Unknown user'}':
+                (row['gross_profit'] as num? ?? 0).toDouble(),
+      };
+      final rows =
+          current.rows
+              .map((row) {
+                final name = '${row['user'] ?? 'Unknown user'}';
+                final revenue = (row['revenue'] as num? ?? 0).toDouble();
+                final oldRevenue = previousByName[name] ?? 0;
+                final change = revenue - oldRevenue;
+                final percent = oldRevenue == 0
+                    ? null
+                    : (change / oldRevenue.abs()) * 100;
+                return (
+                  name: name,
+                  transactions: (row['transaction_count'] as num? ?? 0).toInt(),
+                  revenue: revenue,
+                  oldRevenue: oldRevenue,
+                  change: change,
+                  percent: percent,
+                  profit: profitByName[name] ?? 0.0,
+                );
+              })
+              .toList(growable: false)
+            ..sort((a, b) => b.change.compareTo(a.change));
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Staff performance'),
+          content: SizedBox(
+            width: 900,
+            height: 520,
+            child: rows.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No completed staff sales match this branch and period.',
+                    ),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Most improved: ${rows.first.name} • '
+                        '${_staffChange(rows.first.change, rows.first.percent)}',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Compare sales with the previous matching period. '
+                        'Review profit, discounts, returns and cash variance together.',
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SingleChildScrollView(
+                            child: DataTable(
+                              columns: [
+                                const DataColumn(label: Text('Staff')),
+                                const DataColumn(
+                                  label: Text('Transactions'),
+                                  numeric: true,
+                                ),
+                                const DataColumn(
+                                  label: Text('Revenue'),
+                                  numeric: true,
+                                ),
+                                const DataColumn(
+                                  label: Text('Previous'),
+                                  numeric: true,
+                                ),
+                                const DataColumn(
+                                  label: Text('Improvement'),
+                                  numeric: true,
+                                ),
+                                if (profit != null)
+                                  const DataColumn(
+                                    label: Text('Gross profit'),
+                                    numeric: true,
+                                  ),
+                              ],
+                              rows: [
+                                for (final row in rows)
+                                  DataRow(
+                                    cells: [
+                                      DataCell(Text(row.name)),
+                                      DataCell(Text('${row.transactions}')),
+                                      DataCell(
+                                        Text(AppFormatters.money(row.revenue)),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          AppFormatters.money(row.oldRevenue),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          _staffChange(row.change, row.percent),
+                                        ),
+                                      ),
+                                      if (profit != null)
+                                        DataCell(
+                                          Text(AppFormatters.money(row.profit)),
+                                        ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (error) {
+      if (mounted) showFailure(context, error);
+    }
+  }
+
+  CommercialReportFilter _previousStaffFilter() {
+    final now = DateTime.now();
+    final current = CommercialReportFilter.period(period, now: now);
+    DateTime? from;
+    DateTime? to;
+    switch (period) {
+      case 'today':
+        to = DateTime(now.year, now.month, now.day);
+        from = to.subtract(const Duration(days: 1));
+        break;
+      case 'yesterday':
+        to = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(const Duration(days: 1));
+        from = to.subtract(const Duration(days: 1));
+        break;
+      case 'this_week':
+      case 'last_week':
+        to = current.from;
+        from = to?.subtract(const Duration(days: 7));
+        break;
+      case 'this_month':
+      case 'last_month':
+        final end = current.from ?? DateTime(now.year, now.month);
+        to = end;
+        from = DateTime(end.year, end.month - 1);
+        break;
+      case 'this_quarter':
+        final end = current.from ?? DateTime(now.year, now.month);
+        to = end;
+        from = DateTime(end.year, end.month - 3);
+        break;
+      case 'this_year':
+        final end = current.from ?? DateTime(now.year);
+        to = end;
+        from = DateTime(end.year - 1);
+        break;
+      default:
+        return current.copyWith(
+          branchId: consolidated
+              ? null
+              : selectedBranchId ?? widget.user.branchId,
+          consolidated: consolidated,
+        );
+    }
+    return CommercialReportFilter(
+      from: from,
+      to: to,
+      branchId: consolidated ? null : selectedBranchId ?? widget.user.branchId,
+      consolidated: consolidated,
+    );
+  }
+
+  static String _staffChange(double change, double? percent) {
+    if (percent == null) {
+      return 'New • ${AppFormatters.money(change)}';
+    }
+    final sign = change > 0 ? '+' : '';
+    return '$sign${AppFormatters.money(change)} '
+        '(${percent >= 0 ? '+' : ''}${percent.toStringAsFixed(1)}%)';
+  }
+
   Future<void> _exportCsv() async {
+    if (!widget.user.can(CommercialPermission.reportsExport)) return;
     try {
       final result = await future;
       final path = await widget.state.advancedReports.exportCsv(result);
@@ -944,6 +1231,7 @@ class _ReportsPanelState extends State<_ReportsPanel> {
   }
 
   Future<void> _exportXlsx() async {
+    if (!widget.user.can(CommercialPermission.reportsExport)) return;
     try {
       final result = await future;
       final path = await widget.state.advancedReports.exportXlsx(result);
@@ -954,6 +1242,7 @@ class _ReportsPanelState extends State<_ReportsPanel> {
   }
 
   Future<void> _previewPdf() async {
+    if (!widget.user.can(CommercialPermission.reportsExport)) return;
     try {
       final result = await future;
       if (!mounted) return;

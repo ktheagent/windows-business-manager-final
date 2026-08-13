@@ -207,7 +207,7 @@ class AdvancedReportService {
     required CommercialReportKind kind,
     CommercialReportFilter filter = const CommercialReportFilter(),
   }) async {
-    _authorize(actor, filter);
+    _authorize(actor, filter, kind);
     final db = await _database.database;
     final effectiveBranch = filter.branchId ?? actor.branchId;
     return switch (kind) {
@@ -1342,8 +1342,26 @@ class AdvancedReportService {
     }
   }
 
-  static void _authorize(StaffUser actor, CommercialReportFilter filter) {
-    if (!actor.can(CommercialPermission.reportsView) &&
+  static void _authorize(
+    StaffUser actor,
+    CommercialReportFilter filter,
+    CommercialReportKind kind,
+  ) {
+    const profitKinds = <CommercialReportKind>{
+      CommercialReportKind.grossProfit,
+      CommercialReportKind.netProfit,
+      CommercialReportKind.costOfGoodsSold,
+      CommercialReportKind.profitByProduct,
+      CommercialReportKind.profitByCategory,
+      CommercialReportKind.profitByUser,
+      CommercialReportKind.profitByBranch,
+    };
+    if (profitKinds.contains(kind) &&
+        !actor.can(CommercialPermission.reportsProfit)) {
+      throw StateError('Your staff role cannot view profit-sensitive reports.');
+    }
+    if (!profitKinds.contains(kind) &&
+        !actor.can(CommercialPermission.reportsView) &&
         !actor.can(CommercialPermission.reportsProfit)) {
       throw StateError('Your staff role cannot view commercial reports.');
     }
