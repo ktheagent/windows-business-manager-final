@@ -93,4 +93,4 @@ jobs:
           git commit -m "Improve branch and staff performance reporting"
           git push
 
-# rerun with clean utf-8 helper
+# rerun after idempotent reporting verifiers
