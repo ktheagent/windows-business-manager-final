@@ -1,2 +1,383 @@
-import base64, zlib
-exec(zlib.decompress(base64.b64decode("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")).decode("utf-8"))
+# -*- coding: utf-8 -*-
+from pathlib import Path
+
+path = Path("lib/commercial/screens/commercial_suite_screen.dart")
+text = path.read_text(encoding="utf-8")
+
+def replace_once(old: str, new: str, label: str) -> None:
+    global text
+    count = text.count(old)
+    if count != 1:
+        raise SystemExit(f"{label}: expected 1 match, found {count}")
+    text = text.replace(old, new, 1)
+
+replace_once(
+'''  CommercialReportKind kind = CommercialReportKind.revenue;
+  String period = 'this_month';
+  bool consolidated = false;
+  late Future<CommercialReportResult> future;
+''',
+'''  CommercialReportKind kind = CommercialReportKind.revenue;
+  String period = 'this_month';
+  bool consolidated = false;
+  late int selectedBranchId;
+  late Future<CommercialReportResult> future;
+
+  static const profitKinds = <CommercialReportKind>{
+    CommercialReportKind.grossProfit,
+    CommercialReportKind.netProfit,
+    CommercialReportKind.costOfGoodsSold,
+    CommercialReportKind.profitByProduct,
+    CommercialReportKind.profitByCategory,
+    CommercialReportKind.profitByUser,
+    CommercialReportKind.profitByBranch,
+  };
+''',
+'report state fields')
+
+replace_once(
+'''    super.initState();
+    future = _load();
+''',
+'''    super.initState();
+    selectedBranchId = widget.user.branchId;
+    future = _load();
+''',
+'report initState')
+
+replace_once(
+'''      consolidated: consolidated,
+      branchId: consolidated ? null : widget.user.branchId,
+''',
+'''      consolidated: consolidated,
+      branchId: consolidated ? null : selectedBranchId,
+''',
+'report branch filter')
+
+replace_once(
+'''    final mayConsolidate =
+        widget.user.role == StaffRole.owner ||
+        widget.user.role == StaffRole.manager;
+    return Column(
+''',
+'''    final mayConsolidate =
+        widget.user.role == StaffRole.owner ||
+        widget.user.role == StaffRole.manager;
+    final mayChooseBranch = mayConsolidate;
+    final mayExport = widget.user.can(CommercialPermission.reportsExport);
+    final canSeeProfit = widget.user.can(CommercialPermission.reportsProfit);
+    final activeBranches = widget.state.branches
+        .where((branch) => branch.isActive)
+        .toList(growable: false);
+    return Column(
+''',
+'report build permissions')
+
+replace_once(
+'''                  for (final item in CommercialReportKind.values)
+                    DropdownMenuItem(value: item, child: Text(item.label)),
+''',
+'''                  for (final item in CommercialReportKind.values)
+                    if (canSeeProfit || !profitKinds.contains(item))
+                      DropdownMenuItem(value: item, child: Text(item.label)),
+''',
+'profit report dropdown filter')
+
+branch_ui = '''            if (mayChooseBranch)
+              SizedBox(
+                width: 220,
+                child: DropdownButtonFormField<int>(
+                  key: ValueKey('report-branch-$selectedBranchId'),
+                  initialValue: selectedBranchId,
+                  decoration: const InputDecoration(labelText: 'Branch'),
+                  items: [
+                    for (final branch in activeBranches)
+                      DropdownMenuItem(
+                        value: branch.id,
+                        child: Text(
+                          branch.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: consolidated
+                      ? null
+                      : (value) {
+                          if (value == null) return;
+                          selectedBranchId = value;
+                          reload();
+                        },
+                ),
+              ),
+            if (!mayChooseBranch)
+              Chip(
+                avatar: const Icon(Icons.store_outlined, size: 18),
+                label: Text(_branchName(selectedBranchId)),
+              ),
+'''
+replace_once(
+'''            if (mayConsolidate)
+              FilterChip(
+''',
+branch_ui + '''            if (mayConsolidate)
+              FilterChip(
+''',
+'branch selector insertion')
+
+replace_once(
+'''            FilledButton.icon(
+              onPressed: reload,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
+            ),
+''',
+'''            OutlinedButton.icon(
+              onPressed: _showStaffPerformance,
+              icon: const Icon(Icons.groups_2_outlined),
+              label: const Text('Staff performance'),
+            ),
+            FilledButton.icon(
+              onPressed: reload,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
+            ),
+''',
+'staff performance button')
+
+replace_once('onPressed: _exportCsv,', 'onPressed: mayExport ? _exportCsv : null,', 'CSV export permission')
+replace_once('onPressed: _exportXlsx,', 'onPressed: mayExport ? _exportXlsx : null,', 'XLSX export permission')
+replace_once('onPressed: _previewPdf,', 'onPressed: mayExport ? _previewPdf : null,', 'PDF export permission')
+
+methods = '''  String _branchName(int branchId) {
+    for (final branch in widget.state.branches) {
+      if (branch.id == branchId) return branch.name;
+    }
+    return 'Branch $branchId';
+  }
+
+  CommercialReportFilter _forUser(
+    CommercialReportFilter base,
+    int userId,
+  ) => CommercialReportFilter(
+    from: base.from,
+    to: base.to,
+    branchId: base.branchId,
+    userId: userId,
+    productId: base.productId,
+    category: base.category,
+    customerId: base.customerId,
+    supplierId: base.supplierId,
+    paymentMethod: base.paymentMethod,
+    documentStatus: base.documentStatus,
+    consolidated: base.consolidated,
+  );
+
+  CommercialReportFilter? _previousPeriodFilter() {
+    final current = filter;
+    if (current.from == null || current.to == null) return null;
+    final span = current.to!.difference(current.from!);
+    if (span <= Duration.zero) return null;
+    return CommercialReportFilter(
+      from: current.from!.subtract(span),
+      to: current.from,
+      branchId: current.branchId,
+      consolidated: current.consolidated,
+    );
+  }
+
+  Future<void> _showStaffPerformance() async {
+    try {
+      final staff = (await widget.state.commercial.listStaff(widget.user))
+          .where((item) => item.isActive)
+          .toList(growable: false);
+      final previousBase = _previousPeriodFilter();
+      final canSeeProfit = widget.user.can(CommercialPermission.reportsProfit);
+      final rows = <Map<String, Object?>>[];
+
+      for (final person in staff) {
+        final currentSales = await widget.state.advancedReports.run(
+          actor: widget.user,
+          kind: CommercialReportKind.salesByUser,
+          filter: _forUser(filter, person.id),
+        );
+        final currentRevenue = currentSales.totals['revenue'] ?? 0;
+        final transactions = currentSales.totals['transaction_count'] ?? 0;
+
+        double previousRevenue = 0;
+        if (previousBase != null) {
+          final previousSales = await widget.state.advancedReports.run(
+            actor: widget.user,
+            kind: CommercialReportKind.salesByUser,
+            filter: _forUser(previousBase, person.id),
+          );
+          previousRevenue = previousSales.totals['revenue'] ?? 0;
+        }
+
+        double? grossProfit;
+        if (canSeeProfit) {
+          final profit = await widget.state.advancedReports.run(
+            actor: widget.user,
+            kind: CommercialReportKind.grossProfit,
+            filter: _forUser(filter, person.id),
+          );
+          grossProfit = profit.totals['gross_profit'] ?? 0;
+        }
+
+        final change = currentRevenue - previousRevenue;
+        final growth = previousRevenue == 0
+            ? null
+            : (change / previousRevenue.abs()) * 100;
+        rows.add({
+          'id': person.id,
+          'name': person.name,
+          'branch': _branchName(person.branchId),
+          'transactions': transactions,
+          'revenue': currentRevenue,
+          'previous_revenue': previousRevenue,
+          'change': change,
+          'growth': growth,
+          'gross_profit': grossProfit,
+        });
+      }
+
+      rows.sort((a, b) =>
+          (b['change'] as double).compareTo(a['change'] as double));
+      if (!mounted) return;
+      final best = rows.isEmpty ? null : rows.first;
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Staff performance'),
+          content: SizedBox(
+            width: 980,
+            height: 540,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (best != null)
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.trending_up),
+                      title: Text('Most improved: ${best['name']}'),
+                      subtitle: Text(
+                        'Revenue change ${AppFormatters.money(best['change'] as double)} '
+                        'for ${periods[period] ?? period}.',
+                      ),
+                    ),
+                  ),
+                if (previousBase == null)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'All-dates view has no matching previous period. '
+                      'Choose a dated period to compare improvement.',
+                    ),
+                  ),
+                Expanded(
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SingleChildScrollView(
+                        child: DataTable(
+                          columns: [
+                            const DataColumn(label: Text('Staff')),
+                            const DataColumn(label: Text('Branch')),
+                            const DataColumn(
+                              label: Text('Transactions'),
+                              numeric: true,
+                            ),
+                            const DataColumn(
+                              label: Text('Revenue'),
+                              numeric: true,
+                            ),
+                            const DataColumn(
+                              label: Text('Previous revenue'),
+                              numeric: true,
+                            ),
+                            const DataColumn(
+                              label: Text('Improvement'),
+                              numeric: true,
+                            ),
+                            if (canSeeProfit)
+                              const DataColumn(
+                                label: Text('Gross profit'),
+                                numeric: true,
+                              ),
+                          ],
+                          rows: [
+                            for (final row in rows)
+                              DataRow(
+                                cells: [
+                                  DataCell(Text('${row['name']}')),
+                                  DataCell(Text('${row['branch']}')),
+                                  DataCell(Text(
+                                    (row['transactions'] as double)
+                                        .toStringAsFixed(0),
+                                  )),
+                                  DataCell(Text(AppFormatters.money(
+                                    row['revenue'] as double,
+                                  ))),
+                                  DataCell(Text(AppFormatters.money(
+                                    row['previous_revenue'] as double,
+                                  ))),
+                                  DataCell(Text(_growthLabel(row))),
+                                  if (canSeeProfit)
+                                    DataCell(Text(AppFormatters.money(
+                                      row['gross_profit'] as double? ?? 0,
+                                    ))),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (error) {
+      if (mounted) showFailure(context, error);
+    }
+  }
+
+  String _growthLabel(Map<String, Object?> row) {
+    final growth = row['growth'] as double?;
+    final change = row['change'] as double;
+    if (growth == null) {
+      return change > 0 ? 'New +${AppFormatters.money(change)}' : '-';
+    }
+    final prefix = growth > 0 ? '+' : '';
+    return '$prefix${growth.toStringAsFixed(1)}%';
+  }
+
+'''
+replace_once(
+'''  Future<void> _exportCsv() async {
+''',
+methods + '''  Future<void> _exportCsv() async {
+''',
+'staff performance methods')
+
+for token in [
+    'selectedBranchId',
+    'Staff performance',
+    'Most improved',
+    'reportsExport',
+    'previous_revenue',
+    'profitKinds',
+]:
+    if token not in text:
+        raise SystemExit(f"reporting upgrade missing token: {token}")
+
+path.write_text(text, encoding="utf-8")
