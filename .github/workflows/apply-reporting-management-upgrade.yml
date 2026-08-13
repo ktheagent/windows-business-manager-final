@@ -100,3 +100,5 @@ jobs:
           git push
 
 # rerun after idempotent reporting verifiers and no-op commit handling
+
+# trigger fresh validation after no-op fix 2026-08-13
